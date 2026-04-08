@@ -1,0 +1,103 @@
+site_name: EntraFalcon
+site_description: Technical documentation for the EntraFalcon Microsoft Entra ID security assessment tool
+site_url: https://compasssecurity.github.io/EntraFalcon/
+repo_url: https://github.com/CompassSecurity/EntraFalcon
+repo_name: CompassSecurity/EntraFalcon
+copyright: Copyright &copy; 2026 Compass Security Switzerland AG
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Dark mode (default)
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  features:
+    # Navigation
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.sections
+    - navigation.path
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    # Table of contents
+    - toc.follow
+    # Search
+    - search.highlight
+    - search.suggest
+    - search.share
+    # Header
+    - header.autohide
+    - announce.dismiss
+    # Content
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - privacy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.mark
+  - pymdownx.keys
+  - tables
+  - attr_list
+  - md_in_html
+  - def_list
+  - footnotes
+  - toc:
+      permalink: true
+
+not_in_nav: |
+  review/**
+  automation/**
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Usage: getting-started/usage.md
+  - Reference:
+    - Authentication flows: reference/authentication.md
+    - Architecture: reference/architecture.md
+    - Dependencies: reference/dependencies.md
+    - Network & detection: reference/network-and-detection.md
+    - Limitations: reference/limitations.md
+  - Assessment:
+    - Checks & findings: assessment/checks-and-findings.md
+    - Scoring system: assessment/scoring-system.md
+    - Scoring glossary: assessment/scoring-glossary.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/CompassSecurity/EntraFalcon
+      name: EntraFalcon on GitHub
+  generator: false
