@@ -19,9 +19,12 @@ function Invoke-CheckEnterpriseApps {
         [Parameter(Mandatory=$true)][Object[]]$CurrentTenant,
         [Parameter(Mandatory=$false)][hashtable]$AzureIAMAssignments,
         [Parameter(Mandatory=$true)][hashtable]$AllUsersBasicHT,
+        [Parameter(Mandatory=$true)][hashtable]$AgentObjectBasics,
         [Parameter(Mandatory=$true)][hashtable]$TenantRoleAssignments,
         [Parameter(Mandatory = $true)][int]$ApiTop,
+        [Parameter(Mandatory=$true)][hashtable]$ServicePrincipalSignInActivityLookup,
         [Parameter(Mandatory=$true)][String[]]$StartTimestamp,
+        [Parameter(Mandatory=$false)][ref]$AppRoleReferenceCacheOut = $null,
         [Parameter(Mandatory=$false)][switch]$Csv = $false
     )
 
@@ -35,9 +38,8 @@ function Invoke-CheckEnterpriseApps {
     $ProgressCounter = 0
     $Inactive = $false
     $EnterpriseAppsScriptWarningList = @()
-    $ApiAppDisplayNameCache = @{}
     $AppRegistrations = @{}
-    $AppLastSignIns = @{}
+    $AppLastSignIns = $ServicePrincipalSignInActivityLookup
     $AllServicePrincipal = [System.Collections.ArrayList]::new()
     $AllObjectDetailsHTML = [System.Collections.ArrayList]::new()
     $global:GLOBALUserAppRoles = @{}
@@ -66,6 +68,54 @@ function Invoke-CheckEnterpriseApps {
         "NoAppLock"                 = 2
     }
 
+    function Resolve-EnterpriseAppOwner {
+        param(
+            [Parameter(Mandatory = $true)]$OwnerObject
+        )
+
+        # Keep Enterprise App owners on one path while resolving agent-backed owners through the shared typed lookup.
+        switch ($OwnerObject.'@odata.type') {
+            '#microsoft.graph.servicePrincipal' {
+                $targetReport = if ($OwnerObject.servicePrincipalType -eq 'ManagedIdentity') { 'ManagedIdentities' } else { 'EnterpriseApps' }
+                return [pscustomobject]@{
+                    Id                   = $OwnerObject.Id
+                    DisplayName          = $OwnerObject.displayName
+                    Enabled              = $OwnerObject.accountEnabled
+                    Foreign              = ($OwnerObject.servicePrincipalType -ne 'ManagedIdentity' -and $OwnerObject.appOwnerOrganizationId -ne $CurrentTenant.id)
+                    PublisherName        = if ([string]::IsNullOrWhiteSpace($OwnerObject.publisherName)) { "-" } else { $OwnerObject.publisherName }
+                    Type                 = if ($OwnerObject.servicePrincipalType -eq 'ManagedIdentity') { 'ManagedIdentity' } else { 'ServicePrincipal' }
+                    TargetReport         = $targetReport
+                    ServicePrincipalType = $OwnerObject.servicePrincipalType
+                }
+            }
+
+            '#microsoft.graph.agentIdentity' {
+                $resolvedObject = Resolve-DirectoryObjectReference -ObjectId $OwnerObject.Id -RawType '#microsoft.graph.agentIdentity' -CurrentTenant $CurrentTenant -AllUsersBasicHT $AllUsersBasicHT -AllGroupsDetails @{} -ServicePrincipalBasics @{} -AgentObjectBasics $AgentObjectBasics
+            }
+
+            '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+                $resolvedObject = Resolve-DirectoryObjectReference -ObjectId $OwnerObject.Id -RawType '#microsoft.graph.agentIdentityBlueprintPrincipal' -CurrentTenant $CurrentTenant -AllUsersBasicHT $AllUsersBasicHT -AllGroupsDetails @{} -ServicePrincipalBasics @{} -AgentObjectBasics $AgentObjectBasics
+            }
+
+            default {
+                return $null
+            }
+        }
+
+        if (-not $resolvedObject) { return $null }
+
+        return [pscustomobject]@{
+            Id                   = $resolvedObject.Id
+            DisplayName          = $resolvedObject.DisplayName
+            Enabled              = $resolvedObject.Enabled
+            Foreign              = $resolvedObject.Foreign
+            PublisherName        = $resolvedObject.PublisherName
+            Type                 = $resolvedObject.ObjectKind
+            TargetReport         = $resolvedObject.TargetReport
+            ServicePrincipalType = $resolvedObject.ServicePrincipalType
+        }
+    }
+
     ########################################## SECTION: DATACOLLECTION ##########################################
     # Get Enterprise Apps
     write-host "[*] Get Enterprise Apps"
@@ -88,24 +138,10 @@ function Invoke-CheckEnterpriseApps {
         }
     }
 
-    # Get all App API Permissions (needed to resolve the ID to a human readable name)
-    # It is required to do this on all MS apps to get the permissions of the custom apps
-    write-host "[*] Get all API permissions"
-    $AllPermissions = foreach ($item in $EnterpriseApps) {
-        if ($null -ne $item.AppRoles) {
-            $role = $item.AppRoles | Where-Object {$_.AllowedMemberTypes -contains "Application"} | select-object id,DisplayName,Value,Description
-            foreach ($permission in $role) {
-                [PSCustomObject]@{ 
-                    AppID = $item.Id
-                    AppName = $item.DisplayName
-                    ApiPermissionId = $permission.id
-                    ApiPermissionValue = $permission.Value
-                    ApiPermissionDisplayName = $permission.DisplayName
-                    ApiPermissionDescription = $permission.Description
-                    ApiPermissionCategorization = Get-APIPermissionCategory -InputPermission $permission.id -PermissionType "application"
-                } 
-            }
-        }
+    write-host "[*] Build shared app role reference cache"
+    $AppRoleReferenceCache = New-AppRoleReferenceCache -ServicePrincipals $EnterpriseApps
+    if ($null -ne $AppRoleReferenceCacheOut) {
+        $AppRoleReferenceCacheOut.Value = $AppRoleReferenceCache
     }
 
     # Filter out MS enterprise apps
@@ -145,28 +181,7 @@ function Invoke-CheckEnterpriseApps {
     }
     Write-Log -Level Debug -Message "Got $($AppRegistrations.Count) app registrations"
 
-    write-host "[*] Get last app last sign-in dates"
-    $AppLastSignInsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/reports/servicePrincipalSignInActivities" -BetaAPI -QueryParameters @{ '$top' = $ApiTop } -UserAgent $($GlobalAuditSummary.UserAgent.Name)
-    foreach ($app in $AppLastSignInsRaw) {
-        $AppLastSignIns[$app.appId] = @{
-            id = $app.appId
-            lastSignIn = if ($app.lastSignInActivity.lastSignInDateTime) {$app.lastSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInDays = if ($app.lastSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.lastSignInActivity.lastSignInDateTime).Days } else { "-" }
-    
-            lastSignInAppAsClient = if ($app.applicationAuthenticationClientSignInActivity.lastSignInDateTime) {$app.applicationAuthenticationClientSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInAppAsClientDays = if ($app.applicationAuthenticationClientSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.applicationAuthenticationClientSignInActivity.lastSignInDateTime).Days } else { "-" }
-    
-            lastSignInAppAsResource = if ($app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime) {$app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInAppAsResourceDays = if ($app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime).Days } else { "-" }
-    
-            lastSignInDelegatedAsClient = if ($app.delegatedClientSignInActivity.lastSignInDateTime) {$app.delegatedClientSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInDelegatedAsClientDays = if ($app.delegatedClientSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.delegatedClientSignInActivity.lastSignInDateTime).Days } else { "-" }
-    
-            lastSignInDelegatedAsResource = if ($app.delegatedResourceSignInActivity.lastSignInDateTime) {$app.delegatedResourceSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInDelegatedAsResourceDays = if ($app.delegatedResourceSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.delegatedResourceSignInActivity.lastSignInDateTime).Days } else { "-" }
-        }
-    }
-    Write-Log -Level Debug -Message "Got $($AppLastSignInsRaw.Count) app last sign-in dates"
+    Write-Log -Level Debug -Message "Using $($AppLastSignIns.Count) cached app last sign-in dates"
 
     Write-Host "[*] Get all applications API permissions assignments"
     $Requests = @()
@@ -174,7 +189,7 @@ function Invoke-CheckEnterpriseApps {
         $Requests += @{
             "id"     = $($_.id)
             "method" = "GET"
-            "url"    =   "/servicePrincipals/$($_.id)/appRoleAssignments?`$select=AppRoleId"
+            "url"    =   "/servicePrincipals/$($_.id)/appRoleAssignments?`$select=AppRoleId,ResourceId,ResourceDisplayName"
         }
     }
     # Send Batch request and create a hashtable
@@ -397,6 +412,8 @@ function Invoke-CheckEnterpriseApps {
                 [void]$AppAssignments.Add(
                     [PSCustomObject]@{
                         AppRoleId = $AppAssignmentsRole.AppRoleId
+                        ResourceId = $AppAssignmentsRole.ResourceId
+                        ResourceDisplayName = $AppAssignmentsRole.ResourceDisplayName
                     }
                 )
             }
@@ -405,22 +422,9 @@ function Invoke-CheckEnterpriseApps {
         #Get the application's API permission
         $AppApiPermission = [System.Collections.ArrayList]::new()
         foreach ($AppSinglePermission in $AppAssignments) {
-
-            $AssignedPermission =  $AllPermissions | where-object { $_.ApiPermissionId -eq $AppSinglePermission.AppRoleId}
-
-            #Additional for loop because Office and MS Graph API have shared permission IDs
-            foreach ($Permission in $AssignedPermission) {
-                [void]$AppApiPermission.Add(
-                    [pscustomobject]@{
-                        Type = "Permission"
-                        PermissionId = $Permission.ApiPermissionId
-                        ApiPermission = $Permission.ApiPermissionValue
-                        ApiName = $Permission.AppName
-                        ApiPermissionDisplayname = $Permission.ApiPermissionDisplayname
-                        ApiPermissionDescription = $Permission.ApiPermissionDescription
-                        ApiPermissionCategorization = $Permission.ApiPermissionCategorization
-                    }
-                )
+            $ResolvedPermission = Resolve-AppRoleAssignmentRecord -AppRoleReferenceCache $AppRoleReferenceCache -PermissionId $AppSinglePermission.AppRoleId -ResourceId $AppSinglePermission.ResourceId -ApiNameOverride $AppSinglePermission.ResourceDisplayName
+            if ($null -ne $ResolvedPermission) {
+                [void]$AppApiPermission.Add($ResolvedPermission)
             }
         }
 
@@ -555,42 +559,7 @@ function Invoke-CheckEnterpriseApps {
             }
         }
 
-        $DelegatedPermissionDetails = foreach ($permission in $DelegatedPermission) {
-
-            # Check if DisplayName for the ResourceId is already cached
-            if (-not $ApiAppDisplayNameCache.ContainsKey($permission.ResourceId)) {
-
-                # Retrieve and cache the DisplayName if not cached
-                $QueryParameters = @{
-                    '$select' = "DisplayName"
-                }
-                #Set odata.metadata=none to avoid having metadata in the response
-                $headers = @{ 
-                    'Accept' = 'application/json;odata.metadata=none' 
-                }
-                $ApiAppDisplayNameCache[$permission.ResourceId] = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/servicePrincipals/$($permission.ResourceId)" -QueryParameters $QueryParameters -AdditionalHeaders $headers -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
-            }
-
-            # Split the Scope field by spaces to get individual permissions. Ignores whitespece at the start of the string
-            $scopes = $permission.Scope.Trim() -split " "
-            
-            if ($permission.ConsentType -eq "Principal") {
-                $principal = $permission.PrincipalId
-            } else {
-                $principal = "-"
-            }
-            # Create a custom object for each scope with ResourceId, ConsentType, Scope, and DisplayName
-            foreach ($scope in $scopes) {
-                [pscustomobject]@{
-                    ResourceId  = $permission.ResourceId
-                    ConsentType = $permission.ConsentType
-                    Scope       = $scope
-                    APIName = $ApiAppDisplayNameCache[$permission.ResourceId].displayname  # Get the cached DisplayName
-                    Principal = $principal
-                    ApiPermissionCategorization = Get-APIPermissionCategory -InputPermission $scope -PermissionType "delegated"
-                }
-            }
-        }
+        $DelegatedPermissionDetails = Resolve-DelegatedPermissionGrantDetails -AppRoleReferenceCache $AppRoleReferenceCache -DelegatedPermissions @($DelegatedPermission)
 
 
         #Store unique permission to show in table
@@ -805,17 +774,43 @@ function Invoke-CheckEnterpriseApps {
                         )
                     }
 
-                    '#microsoft.graph.servicePrincipal' {
-                        [void]$OwnerSPDetails.Add(
+                    '#microsoft.graph.agentUser' {
+                        if ($null -eq $OwnedObject.onPremisesSyncEnabled) {
+                            $OwnedObject.onPremisesSyncEnabled = $false
+                        }
+                        [void]$OwnerUserDetails.Add(
                             [PSCustomObject]@{
-                                Id                     = $OwnedObject.Id
-                                displayName            = $OwnedObject.displayName
-                                Enabled                = $OwnedObject.accountEnabled
-                                appOwnerOrganizationId = $OwnedObject.appOwnerOrganizationId
-                                publisherName          = $OwnedObject.publisherName
-                                servicePrincipalType   = $OwnedObject.servicePrincipalType
+                                Id             = $OwnedObject.Id
+                                UPN            = $OwnedObject.userPrincipalName
+                                Enabled        = $OwnedObject.accountEnabled
+                                Type           = $OwnedObject.userType
+                                Department     = $OwnedObject.department
+                                JobTitle       = $OwnedObject.jobTitle
+                                OnPremSync     = $OwnedObject.onPremisesSyncEnabled
+                                AssignmentType = 'Active'
                             }
                         )
+                    }
+
+                    '#microsoft.graph.servicePrincipal' {
+                        $resolvedOwner = Resolve-EnterpriseAppOwner -OwnerObject $OwnedObject
+                        if ($resolvedOwner) {
+                            [void]$OwnerSPDetails.Add($resolvedOwner)
+                        }
+                    }
+
+                    '#microsoft.graph.agentIdentity' {
+                        $resolvedOwner = Resolve-EnterpriseAppOwner -OwnerObject $OwnedObject
+                        if ($resolvedOwner) {
+                            [void]$OwnerSPDetails.Add($resolvedOwner)
+                        }
+                    }
+
+                    '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+                        $resolvedOwner = Resolve-EnterpriseAppOwner -OwnerObject $OwnedObject
+                        if ($resolvedOwner) {
+                            [void]$OwnerSPDetails.Add($resolvedOwner)
+                        }
                     }
                 }
             }
@@ -840,6 +835,14 @@ function Invoke-CheckEnterpriseApps {
                 } else {
                     $Warnings += "SP with owner but app protected by AppLock!"
                 }
+            }
+        }
+
+        if (($OwnerSPDetails | Measure-Object).count -ge 1) {
+            if ($OwnerSPDetails.Foreign -contains $true) {
+                $Warnings += "Foreign non-user owner!"
+            } elseif ($OwnerSPDetails.Foreign -contains $false) {
+                $Warnings += "Internal non-user owner"
             }
         }
             
@@ -885,7 +888,7 @@ function Invoke-CheckEnterpriseApps {
 
             #Check each group
             foreach ($Groups in $GroupMember) {
-                # High-level: inherit group impact excluding eligible/PIM role contribution.
+                # Inherit group impact excluding eligible/PIM role contribution.
                 $groupInheritedImpact = 0
                 [void][int]::TryParse([string]$Groups.ImpactOrgActiveOnly, [ref]$groupInheritedImpact)
                 $ImpactScore += $groupInheritedImpact
@@ -955,7 +958,7 @@ function Invoke-CheckEnterpriseApps {
 
                 #Check each owned group
                 foreach ($OwnedGroup in $OwnedGroups) {
-                    # High-level: ownership inherits the group's full impact (active + eligible role paths).
+                    # Ownership inherits the group's full impact (active + eligible role paths).
                     $groupInheritedImpact = 0
                     if (-not [int]::TryParse([string]$OwnedGroup.Impact, [ref]$groupInheritedImpact)) {
                         [void][int]::TryParse([string]$OwnedGroup.ImpactOrg, [ref]$groupInheritedImpact)
@@ -1625,16 +1628,23 @@ function Invoke-CheckEnterpriseApps {
 
             if ($($item.OwnerSPDetails | Measure-Object).count -ge 1) {
                 $ReportingAppOwnersSP = foreach ($object in $($item.OwnerSPDetails)) {
+                    # Route mixed non-user owners to the correct report based on the normalized target report.
+                    $displayNameLink = switch ($object.TargetReport) {
+                        'AgentIdentities' { "<a href=AgentIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                        'AgentIdentityBlueprintsPrincipals' { "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                        'ManagedIdentities' { "<a href=ManagedIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                        default { "<a href=#$($object.id)>$($object.DisplayName)</a>" }
+                    }
                     [pscustomobject]@{ 
                         "DisplayName" = $($object.DisplayName)
-                        "DisplayNameLink" = "<a href=#$($object.id)>$($object.DisplayName)</a>"
+                        "DisplayNameLink" = $displayNameLink
                         "Enabled" = $($object.Enabled)
-                        "PublisherName" = $($object.publisherName)
-                        "ServicePrincipalType" = $($object.ServicePrincipalType)
+                        "PublisherName" = $($object.PublisherName)
+                        "ServicePrincipalType" = $(if ($object.Type -eq 'ServicePrincipal' -or $object.Type -eq 'ManagedIdentity') { $object.ServicePrincipalType } else { $object.Type })
                     }
                 }
                 [void]$DetailTxtBuilder.AppendLine("================================================================================================")
-                [void]$DetailTxtBuilder.AppendLine("Owners (Service Principals)")
+                [void]$DetailTxtBuilder.AppendLine("Owners (Service Principals / Agent Objects)")
                 [void]$DetailTxtBuilder.AppendLine("================================================================================================")
                 [void]$DetailTxtBuilder.AppendLine(($ReportingAppOwnersSP | format-table -Property DisplayName,Enabled,PublisherName,ServicePrincipalType | Out-String))
                 $ReportingAppOwnersSP = foreach ($obj in $ReportingAppOwnersSP) {
@@ -1831,6 +1841,7 @@ $headerHtml = @"
     $AppApiMedium = 0
     $AppApiLow = 0
     $AppApiMisc = 0
+    $signInBuckets = [System.Collections.Generic.List[string]]::new()
 
     foreach ($app in $tableOutput) {
         if ($app.Foreign) {
@@ -1844,19 +1855,44 @@ $headerHtml = @"
         if ($app.ApiMedium) {$AppApiMedium++}
         if ($app.ApiLow) {$AppApiLow++}
         if ($app.ApiMisc) {$AppApiMisc++}
+
+        $lastSignIn = $app.LastSignInDays
+        if ($lastSignIn -eq "-" -or [string]::IsNullOrWhiteSpace($lastSignIn)) {
+            $signInBuckets.Add("Never")
+        } else {
+            try {
+                $bucket = if ($lastSignIn -le 30) { "0-1 month" }
+                        elseif ($lastSignIn -le 60) { "1-2 months" }
+                        elseif ($lastSignIn -le 90) { "2-3 months" }
+                        elseif ($lastSignIn -le 120) { "3-4 months" }
+                        elseif ($lastSignIn -le 150) { "4-5 months" }
+                        elseif ($lastSignIn -le 180) { "5-6 months" }
+                        else { "6+ months" }
+                $signInBuckets.Add($bucket)
+            } catch {
+                $signInBuckets.Add("Never")
+            }
+        }
     }
 
     # Store in global var
     $GlobalAuditSummary.EnterpriseApps.Count = $EnterpriseAppsCount
     $GlobalAuditSummary.EnterpriseApps.Foreign = $ForeignCount
     $GlobalAuditSummary.EnterpriseApps.Credentials = $CredentialCount
-    
 
     $GlobalAuditSummary.EnterpriseApps.ApiCategorization.Dangerous = $AppApiDangerous
     $GlobalAuditSummary.EnterpriseApps.ApiCategorization.High = $AppApiHigh
     $GlobalAuditSummary.EnterpriseApps.ApiCategorization.Medium = $AppApiMedium
     $GlobalAuditSummary.EnterpriseApps.ApiCategorization.Low = $AppApiLow
     $GlobalAuditSummary.EnterpriseApps.ApiCategorization.Misc = $AppApiMisc
+
+    $signInBuckets | Group-Object | ForEach-Object {
+        $GlobalAuditSummary.EnterpriseApps.SignInActivity[$_.Name] = $_.Count
+    }
+
+    if ($null -ne $AppRoleReferenceCacheOut) {
+        $AppRoleReferenceCacheOut.Value = $AppRoleReferenceCache
+    }
 
     Return $AllServicePrincipalHT
 

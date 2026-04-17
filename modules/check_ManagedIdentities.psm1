@@ -12,6 +12,7 @@ function Invoke-CheckManagedIdentities {
         [Parameter(Mandatory=$true)][hashtable]$AllGroupsDetails,
         [Parameter(Mandatory=$true)][Object[]]$CurrentTenant,
         [Parameter(Mandatory=$false)][hashtable]$AzureIAMAssignments,
+        [Parameter(Mandatory=$false)][hashtable]$AppRoleReferenceCache = @{},
         [Parameter(Mandatory=$true)][hashtable]$TenantRoleAssignments,
         [Parameter(Mandatory = $true)][int]$ApiTop,
         [Parameter(Mandatory=$true)][String[]]$StartTimestamp,
@@ -71,40 +72,13 @@ function Invoke-CheckManagedIdentities {
     }
 
     if ($ManagedIdentitiesCount -ge 1) {
-        # Get all App API Permissions (needed to resolve the ID to a human readable name)
-        # It is required to do this on all MS apps to get the permissions of the custom apps
-        write-host "[*] Get all API permissions"
-        $QueryParameters = @{
-            '$filter' = "ServicePrincipalType eq 'Application'"
-            '$select' = "Id,DisplayName,AppRoles"
-            '$top' = $ApiTop
-        }
-        $EnterpriseApps = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/servicePrincipals' -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
-        $AllPermissions = foreach ($item in $EnterpriseApps) {
-            if ($null -ne $item.AppRoles) {
-                $role = $item.AppRoles | Where-Object {$_.AllowedMemberTypes -contains "Application"} | select-object id,DisplayName,Value,Description
-                foreach ($permission in $role) {
-                    [PSCustomObject]@{ 
-                        AppID = $item.Id
-                        AppName = $item.DisplayName
-                        ApiPermissionId = $permission.id
-                        ApiPermissionValue = $permission.Value
-                        ApiPermissionDisplayName = $permission.DisplayName
-                        ApiPermissionDescription = $permission.Description
-                        ApiPermissionCategorization = Get-APIPermissionCategory -InputPermission $permission.id -PermissionType "application"
-                    } 
-                }
-            }
-        }
-        Write-Log -Level Debug -Message "Got $($AllPermissions.count) permissions"
-
         Write-Host "[*] Get all applications API permissions assignments"
         $Requests = @()
         $ManagedIdentities | ForEach-Object {
             $Requests += @{
                 "id"     = $($_.id)
                 "method" = "GET"
-                "url"    =   "/servicePrincipals/$($_.id)/appRoleAssignments?`$select=AppRoleId"
+                "url"    =   "/servicePrincipals/$($_.id)/appRoleAssignments?`$select=AppRoleId,ResourceId,ResourceDisplayName"
             }
         }
         # Send Batch request and create a hashtable
@@ -178,7 +152,6 @@ function Invoke-CheckManagedIdentities {
         $WarningsHighPermission = $null
         $WarningsDangerousPermission = $null
         $AppCredentials = @()
-        $OwnerSPDetails = @()
         
 
         # Display status based on the objects numbers (slightly improves performance)
@@ -217,6 +190,8 @@ function Invoke-CheckManagedIdentities {
                 [void]$AppAssignments.Add(
                     [PSCustomObject]@{
                         AppRoleId = $AppAssignmentsRole.AppRoleId
+                        ResourceId = $AppAssignmentsRole.ResourceId
+                        ResourceDisplayName = $AppAssignmentsRole.ResourceDisplayName
                     }
                 )
             }
@@ -225,22 +200,9 @@ function Invoke-CheckManagedIdentities {
         #Get the applications API permission
         $AppApiPermission = [System.Collections.ArrayList]::new()
         foreach ($AppSinglePermission in $AppAssignments) {
-
-            $AssignedPermission =  $AllPermissions | where-object { $_.ApiPermissionId -eq $AppSinglePermission.AppRoleId}
-
-            #Additional for loop because Office and MS Graph API have shared permission IDs
-            foreach ($Permission in $AssignedPermission) {
-                [void]$AppApiPermission.Add(
-                    [pscustomobject]@{
-                        Type = "Permission"
-                        PermissionId = $Permission.ApiPermissionId
-                        ApiPermission = $Permission.ApiPermissionValue
-                        ApiName = $Permission.AppName
-                        ApiPermissionDisplayname = $Permission.ApiPermissionDisplayname
-                        ApiPermissionDescription = $Permission.ApiPermissionDescription
-                        ApiPermissionCategorization = $Permission.ApiPermissionCategorization
-                    }
-                )
+            $ResolvedPermission = Resolve-AppRoleAssignmentRecord -AppRoleReferenceCache $AppRoleReferenceCache -PermissionId $AppSinglePermission.AppRoleId -ResourceId $AppSinglePermission.ResourceId -ApiNameOverride $AppSinglePermission.ResourceDisplayName
+            if ($null -ne $ResolvedPermission) {
+                [void]$AppApiPermission.Add($ResolvedPermission)
             }
         }
 
@@ -479,7 +441,7 @@ function Invoke-CheckManagedIdentities {
 
                 #Check each group
                 foreach ($Groups in $GroupMember) {
-                    # High-level: inherit group impact excluding eligible/PIM role contribution.
+                    # Inherit group impact excluding eligible/PIM role contribution.
                     $groupInheritedImpact = 0
                     [void][int]::TryParse([string]$Groups.ImpactOrgActiveOnly, [ref]$groupInheritedImpact)
                     $ImpactScore += $groupInheritedImpact
@@ -550,7 +512,7 @@ function Invoke-CheckManagedIdentities {
 
                 #Check each owned group
                 foreach ($OwnedGroup in $OwnedGroups) {
-                    # High-level: ownership inherits the group's full impact (active + eligible role paths).
+                    # Ownership inherits the group's full impact (active + eligible role paths).
                     $groupInheritedImpact = 0
                     if (-not [int]::TryParse([string]$OwnedGroup.Impact, [ref]$groupInheritedImpact)) {
                         [void][int]::TryParse([string]$OwnedGroup.ImpactOrg, [ref]$groupInheritedImpact)
@@ -690,7 +652,6 @@ function Invoke-CheckManagedIdentities {
             AzureRoles = $AzureRolesEffective
             AzureMaxTier = $AzureMaxTier
             AzureRoleDetails = $AzureRoleDetails
-            OwnerSPDetails = $OwnerSPDetails
             AppCredentials = $AppCredentialsCount
             AppCredentialsDetails = $AppCredentials
             AppApiPermission = $AppApiPermission

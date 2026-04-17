@@ -21,6 +21,7 @@ function Invoke-CheckGroups {
         [Parameter(Mandatory=$true)][hashtable]$TenantRoleAssignments,
         [Parameter(Mandatory=$true)][hashtable]$Devices,
         [Parameter(Mandatory=$true)][hashtable]$AllUsersBasicHT,
+        [Parameter(Mandatory=$true)][hashtable]$AgentObjectBasics,
         [Parameter(Mandatory=$true)][String[]]$StartTimestamp,
         [Parameter(Mandatory = $true)][int]$ApiTop,
         [Parameter(Mandatory=$false)][Object[]]$TenantPimForGroupsAssignments,
@@ -29,23 +30,24 @@ function Invoke-CheckGroups {
 
     ############################## Function section ########################
 
-    #Function to check if SP is foreign.
+    # Normalize non-user owners/members so agent-backed service principals can share the same flow.
     function CheckSP {
         param($Object)
-    
-        $sp = $AllSPBasicHT[$Object.id]
-        if (-not $sp) { return }
-    
-        $ForeignTenant = ($sp.servicePrincipalType -ne "ManagedIdentity" -and $sp.AppOwnerOrganizationId -ne $CurrentTenant.id)
-        $DefaultMS     = ($sp.servicePrincipalType -ne "ManagedIdentity" -and $GLOBALMsTenantIds -contains $sp.AppOwnerOrganizationId)
-    
+
+        # Resolve mixed directory objects through the shared typed lookup instead of assuming every non-user object is a generic service principal.
+        $rawType = if ($Object.PSObject.Properties['RawType']) { $Object.RawType } else { '#microsoft.graph.servicePrincipal' }
+        $resolvedObject = Resolve-DirectoryObjectReference -ObjectId $Object.Id -RawType $rawType -CurrentTenant $CurrentTenant -AllUsersBasicHT $AllUsersBasicHT -AllGroupsDetails @{} -ServicePrincipalBasics $AllSPBasicHT -AgentObjectBasics $AgentObjectBasics
+        if (-not $resolvedObject) { return }
+
         [PSCustomObject]@{
-            Id            = $sp.id
-            DisplayName   = $sp.displayName
-            Foreign       = $ForeignTenant
-            PublisherName = $sp.publisherName
-            SPType        = $sp.servicePrincipalType
-            DefaultMS     = $DefaultMS
+            Id            = $resolvedObject.Id
+            DisplayName   = $resolvedObject.DisplayName
+            Foreign       = $resolvedObject.Foreign
+            PublisherName = $resolvedObject.PublisherName
+            OwnerKind     = $resolvedObject.ObjectKind
+            TargetReport  = $resolvedObject.TargetReport
+            SPType        = $resolvedObject.ServicePrincipalType
+            DefaultMS     = $resolvedObject.DefaultMS
         }
     }   
 
@@ -589,7 +591,6 @@ function Invoke-CheckGroups {
     remove-variable parents -ErrorAction SilentlyContinue
     remove-variable RawResponse -ErrorAction SilentlyContinue
     remove-variable Requests -ErrorAction SilentlyContinue
-    remove-variable AllUsersBasic -ErrorAction SilentlyContinue
     remove-variable GroupMembers -ErrorAction SilentlyContinue
     
     $PmDataCollection.Stop()
@@ -607,7 +608,7 @@ function Invoke-CheckGroups {
         #Loop init section
         $ProgressCounter++
         $ImpactScore = 0
-        $EligibleRoleImpactContribution = 0 # High-level: downstream objects should inherit group impact without eligible/PIM role impact.
+        $EligibleRoleImpactContribution = 0 # Downstream objects should inherit group impact without eligible/PIM role impact.
         $LikelihoodScore = 0
         $Warnings = [System.Collections.Generic.HashSet[string]]::new()
         $ownerGroup = @()
@@ -661,6 +662,7 @@ function Invoke-CheckGroups {
         $memberDevices = [System.Collections.Generic.List[psobject]]::new()
         $owneruser     = [System.Collections.Generic.List[psobject]]::new()
         $ownersp       = [System.Collections.Generic.List[psobject]]::new()
+        $baseOwnerUserDetails = [System.Collections.Generic.List[psobject]]::new()
 
         # Process group members
         if ($TransitiveMembersRaw.ContainsKey($group.Id)) {
@@ -677,7 +679,18 @@ function Invoke-CheckGroups {
                             }
                         )
                     }
-        
+
+                    '#microsoft.graph.agentUser' {
+                        [void]$memberUser.Add(
+                            [PSCustomObject]@{
+                                Id                    = $member.Id
+                                userType              = $member.userType
+                                onPremisesSyncEnabled = $member.onPremisesSyncEnabled
+                                AssignmentType        = 'Active'
+                            }
+                        )
+                    }
+
                     '#microsoft.graph.group' {
 
                         [void]$memberGroup.Add(
@@ -692,6 +705,25 @@ function Invoke-CheckGroups {
                         [void]$memberSP.Add(
                             [PSCustomObject]@{
                                 Id = $member.Id
+                                RawType = $member.'@odata.type'
+                            }
+                        )
+                    }
+
+                    '#microsoft.graph.agentIdentity' {
+                        [void]$memberSP.Add(
+                            [PSCustomObject]@{
+                                Id = $member.Id
+                                RawType = $member.'@odata.type'
+                            }
+                        )
+                    }
+
+                    '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+                        [void]$memberSP.Add(
+                            [PSCustomObject]@{
+                                Id = $member.Id
+                                RawType = $member.'@odata.type'
                             }
                         )
                     }
@@ -713,20 +745,64 @@ function Invoke-CheckGroups {
                 switch ($Owner.'@odata.type') {
         
                     '#microsoft.graph.user' {
-                        [void]$owneruser.Add(
+                        $ownerUserEntry = [PSCustomObject]@{
+                            Id                    = $Owner.Id
+                            userType              = $Owner.userType
+                            onPremisesSyncEnabled = $Owner.onPremisesSyncEnabled
+                            AssignmentType        = 'Active'
+                        }
+
+                        [void]$owneruser.Add($ownerUserEntry)
+                        [void]$baseOwnerUserDetails.Add(
                             [PSCustomObject]@{
                                 Id                    = $Owner.Id
-                                userType              = $Owner.userType
                                 onPremisesSyncEnabled = $Owner.onPremisesSyncEnabled
                                 AssignmentType        = 'Active'
                             }
                         )
                     }
-        
+
+                    '#microsoft.graph.agentUser' {
+                        $ownerUserEntry = [PSCustomObject]@{
+                            Id                    = $Owner.Id
+                            userType              = $Owner.userType
+                            onPremisesSyncEnabled = $Owner.onPremisesSyncEnabled
+                            AssignmentType        = 'Active'
+                        }
+
+                        [void]$owneruser.Add($ownerUserEntry)
+                        [void]$baseOwnerUserDetails.Add(
+                            [PSCustomObject]@{
+                                Id                    = $Owner.Id
+                                onPremisesSyncEnabled = $Owner.onPremisesSyncEnabled
+                                AssignmentType        = 'Active'
+                            }
+                        )
+                    }
+
                     '#microsoft.graph.servicePrincipal' {
                         [void]$ownersp.Add(
                             [PSCustomObject]@{
                                 Id = $Owner.Id
+                                RawType = $Owner.'@odata.type'
+                            }
+                        )
+                    }
+
+                    '#microsoft.graph.agentIdentity' {
+                        [void]$ownersp.Add(
+                            [PSCustomObject]@{
+                                Id = $Owner.Id
+                                RawType = $Owner.'@odata.type'
+                            }
+                        )
+                    }
+
+                    '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+                        [void]$ownersp.Add(
+                            [PSCustomObject]@{
+                                Id = $Owner.Id
+                                RawType = $Owner.'@odata.type'
                             }
                         )
                     }
@@ -992,7 +1068,7 @@ function Invoke-CheckGroups {
             $ImpactScore += $AzureRolesProcessedDetails.ImpactScore
             $AzureRoleScore = $AzureRolesProcessedDetails.ImpactScore
 
-            # High-level: remove eligible Azure role contribution from inherited group impact only.
+            # Remove eligible Azure role contribution from inherited group impact only.
             $EligibleRoleImpactContribution += $AzureRolesProcessedDetails.EligibleImpactScore
 
             #Add group to list for re-processing
@@ -1023,7 +1099,7 @@ function Invoke-CheckGroups {
         if ($owneruser.count -ge 1) {
 
             #Check if there is an owner synced from on-prem
-            if ($null -ne $owneruser.onPremisesSyncEnabled) {
+            if ($owneruser.onPremisesSyncEnabled -contains $true) {
                 $LikelihoodScore += $GroupLikelihoodScore["DirectOwnerOnprem"]
             } else {
                 $LikelihoodScore += $GroupLikelihoodScore["DirectOwnerCloud"]
@@ -1044,7 +1120,7 @@ function Invoke-CheckGroups {
             $ImpactScore += $EntraRolesProcessedDetails.ImpactScore
             $RoleScore = $EntraRolesProcessedDetails.ImpactScore
 
-            # High-level: remove eligible Entra role contribution from inherited group impact only.
+            # Remove eligible Entra role contribution from inherited group impact only.
             $EligibleRoleImpactContribution += $EntraRolesProcessedDetails.EligibleImpactScore
         }
 
@@ -1232,7 +1308,7 @@ function Invoke-CheckGroups {
         }
 
 
-        # High-level: keep full Impact/ImpactOrg for group reporting, and expose active-only inheritance score.
+        # Keep full Impact/ImpactOrg for group reporting, and expose active-only inheritance score.
         $ImpactOrgActiveOnly = [math]::Round([math]::Max(0, $ImpactScore - $EligibleRoleImpactContribution))
 
         # Create custom object
@@ -1282,7 +1358,7 @@ function Invoke-CheckGroups {
             OwnerGroupDetails = $OwnerGroup
             OwnersSynced = $ownersynced
             ownerSpDetails = $ownerSpDetails
-            BaseOwnerUserDetails = $owneruser       #Used for nesting calculations
+            BaseOwnerUserDetails = $baseOwnerUserDetails #Used for nesting calculations
             BaseOwnerSpDetails   = $ownerSpDetails  #Used for nesting calculations
             InheritedHighValue = 0
             Protected = $Protected
@@ -1341,7 +1417,7 @@ function Invoke-CheckGroups {
     # Reprocessing nested groups in groups which give access to potential critical ressources -> Nested group is adjusted
     # Note: Nested groups do not inherit AppRoles
     Write-Log -Level Debug -Message "Processing $($NestedGroupsHighvalue.Count) high value groups with nestings"
-    # Tracks already processed groupID→targetID combinations
+    # Tracks already processed groupID->targetID combinations
     $processedGroupHighValuePairs = New-Object System.Collections.Generic.HashSet[string]
 
     foreach ($highValueGroup in $NestedGroupsHighvalue) {
@@ -1354,7 +1430,7 @@ function Invoke-CheckGroups {
             # Skip self-nesting
             if ($highValueGroup.GroupID -eq $targetId) { continue }
     
-            # Deduplicate highValueGroup → targetId
+            # Deduplicate highValueGroup -> targetId
             $pairKey = "$($highValueGroup.GroupID)|$targetId"
             if ($processedGroupHighValuePairs.Contains($pairKey)) { continue }
             $null = $processedGroupHighValuePairs.Add($pairKey)
@@ -1867,10 +1943,22 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
                     $DisplayNameLength = $DisplayName.Length
                 }                
 
+                if ($object.TargetReport -eq 'AgentIdentities') {
+                    $DisplayNameLink = "<a href=AgentIdentities_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
+                } elseif ($object.TargetReport -eq 'AgentIdentityBlueprintsPrincipals') {
+                    $DisplayNameLink = "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
+                } elseif ($object.TargetReport -eq 'ManagedIdentities') {
+                    $DisplayNameLink = "<a href=ManagedIdentities_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
+                } else {
+                    $DisplayNameLink = "<a href=EnterpriseApps_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
+                }
+
+                $displayType = if ($object.OwnerKind -eq 'ServicePrincipal') { $object.SPType } else { $object.OwnerKind }
+
                 $ownerObj = [pscustomobject]@{ 
                     DisplayName     = $DisplayName
-                    DisplayNameLink = "<a href=EnterpriseApps_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
-                    Type            = $object.SPType
+                    DisplayNameLink = $DisplayNameLink
+                    Type            = $displayType
                     Org             = $object.publisherName
                     Foreign         = $object.Foreign
                     DefaultMS       = $object.DefaultMS
@@ -1879,7 +1967,7 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
             }
         
             # Build TXT
-            $formattedText = Format-ReportSection -Title "Direct Owners (Service Principals" `
+            $formattedText = Format-ReportSection -Title "Owners (Service Principals / Agent Objects)" `
             -Objects $OwnerSPRaw `
             -Properties @("DisplayName", "Type", "Org", "Foreign", "DefaultMS") `
             -ColumnWidths @{ DisplayName = [Math]::Min($DisplayNameLength, 45); Type = 20; Org = 45; Foreign = 8; DefaultMS = 10 }
@@ -1950,9 +2038,10 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
         if (@($item.NestedOwnerSPDetails).Count -ge 1) {
 
             foreach ($object in $item.NestedOwnerSPDetails) {
+                $displayType = if ($object.OwnerKind -eq 'ServicePrincipal') { $object.SPType } else { $object.OwnerKind }
                 $spObj = [pscustomobject]@{
                     "DisplayName"  = $object.DisplayName
-                    "Type"         = $object.SPType
+                    "Type"         = $displayType
                     "Org"          = $object.PublisherName
                     "Foreign"      = $object.Foreign
                     "DefaultMS"    = $object.DefaultMS
@@ -1961,7 +2050,7 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
             }
 
             [void]$DetailTxtBuilder.AppendLine("================================================================================================")
-            [void]$DetailTxtBuilder.AppendLine("Nested Owners (Service Principals)")
+            [void]$DetailTxtBuilder.AppendLine("Nested Owners (Service Principals / Agent Objects)")
             [void]$DetailTxtBuilder.AppendLine("================================================================================================")
             [void]$DetailTxtBuilder.AppendLine(($NestedOwnerSP | Format-Table | Out-String))
         }
@@ -2106,18 +2195,26 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
                     $DisplayNameLength = $DisplayName.Length
                 }
 
-                if ($object.SPType -eq "Application") {
+                if ($object.TargetReport -eq 'AgentIdentities') {
+                    $DisplayNameLink = "<a href=AgentIdentities_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
+                    $org = $object.publisherName
+                } elseif ($object.TargetReport -eq 'AgentIdentityBlueprintsPrincipals') {
+                    $DisplayNameLink = "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
+                    $org = $object.publisherName
+                } elseif ($object.SPType -eq "Application") {
                     $DisplayNameLink = "<a href=EnterpriseApps_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
                     $org = $object.publisherName
                 } else {
                     $DisplayNameLink = "<a href=ManagedIdentities_$($StartTimestamp)_$($EscapedTenantName).html#$($object.id)>$($DisplayName)</a>"
                     $org = "-"
                 }
+
+                $displayType = if ($object.OwnerKind -eq 'ServicePrincipal') { $object.SPType } else { $object.OwnerKind }
         
                 $rawObj = [pscustomobject]@{
                     DisplayName     = $DisplayName
                     DisplayNameLink = $DisplayNameLink
-                    Type            = $object.SPType
+                    Type            = $displayType
                     Org             = $org
                     Foreign         = $object.Foreign
                     DefaultMS       = $object.DefaultMS
@@ -2127,7 +2224,7 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
             }
         
             # Build TXT
-            $formattedText = Format-ReportSection -Title "Nested Members: Service Principals" `
+            $formattedText = Format-ReportSection -Title "Nested Members: Service Principals / Agent Objects" `
             -Objects $NestedSPRaw `
             -Properties @("DisplayName", "Type", "Org", "Foreign", "DefaultMS") `
             -ColumnWidths @{ DisplayName = [Math]::Min($DisplayNameLength, 55); Type = 20; Org = 45; Foreign = 8; DefaultMS = 10 }
@@ -2356,9 +2453,9 @@ $tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPr
             "Application Roles" = $AppRoles
             "Owners (User)" = $OwnerUser
             "Owners (Groups)" = $OwnerGroups
-            "Owners (SP)" = $OwnerSP
+            "Owners (Service Principals / Agent Objects)" = $OwnerSP
             "Nested owners (User)" = $NestedOwnerUser
-            "Nested owner (SP)" = $NestedOwnerSP
+            "Nested Owners (Service Principals / Agent Objects)" = $NestedOwnerSP
             "Nested Groups" = $NestedGroups
             "Nested Users" = $NestedUsers
             "Nested SP" = $NestedSP 

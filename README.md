@@ -35,6 +35,9 @@ Findings are presented in interactive HTML reports to support efficient explorat
     - Enterprise Applications
     - App Registrations
     - Managed Identities
+    - Agent identities (BETA)
+    - Agent identity blueprint principals (BETA)
+    - Agent identity blueprints (BETA)
     - PIM assignments:
         - PIM for Entra Roles
         - PIM for Entra Groups
@@ -179,6 +182,7 @@ This skips the additional authentication needed to access PIM for Groups data.
 | **AuthFlow**           | Preferred auth-flow selector. Values: `BroCi` (default), `AuthCode`, `DeviceCode`, `ManualCode`, `BroCiManualCode`, `BroCiToken`. | `BroCi`                                         |
 | **BroCiToken**         | Azure Portal **refresh token** for `AuthFlow BroCiToken`.                                                                          | -                                                 |
 | **Csv**                | Enables writing CSV report files in addition to TXT/HTML report files.                                                             | `false`                                           |
+| **ExportCapUncoveredUsers** | For each enabled Conditional Access policy with user targeting, exports a CSV listing users **not** covered by that policy. Files are written to a `ConditionalAccessPolicies_UncoveredUsers` subfolder in the output directory. | `false` |
 
 
 ## 📊 Some Example Reports
@@ -583,6 +587,29 @@ The following table roughly summarizes the checks performed, along with their im
 |User|Inactive|No|No|
 |User|Member / owner of groups|Yes|(Yes)|
 |User|Synced from on-prem|Yes|No|
+|AgentIdentity|Linked Agent Users|Yes|No|
+|AgentIdentity|Foreign blueprint principal origin|Yes|Yes|
+|AgentIdentity|Effective API Permission (Application)|Yes|Yes|
+|AgentIdentity|Effective API Permission (Delegated)|Yes|Yes|
+|AgentIdentity|Entra Role|Yes|Yes|
+|AgentIdentity|Azure Role|Yes|Yes|
+|AgentIdentity|Ownership over App Registrations|Yes|Yes|
+|AgentIdentity|Ownership of other Service Principals|Yes|Yes|
+|AgentIdentity|Member / owner of groups|Yes|(Yes)|
+|AgentIdentityBlueprintPrincipal|Linked Agent Identities|Yes|No|
+|AgentIdentityBlueprintPrincipal|Linked Agent Users|Yes|No|
+|AgentIdentityBlueprintPrincipal|Configured API Permission (Application)|No|No|
+|AgentIdentityBlueprintPrincipal|Configured API Permission (Delegated)|No|No|
+|AgentIdentityBlueprintPrincipal|Foreign parent blueprint origin|Yes|No|
+|AgentIdentityBlueprintPrincipal|Entra Role|No|No|
+|AgentIdentityBlueprintPrincipal|Azure Role|No|No|
+|AgentIdentityBlueprint|Blueprint principals|Yes|No|
+|AgentIdentityBlueprint|Linked Agent Identities|Yes|No|
+|AgentIdentityBlueprint|Linked Agent Users|Yes|No|
+|AgentIdentityBlueprint|Inheritable API permissions|Yes|No|
+|AgentIdentityBlueprint|Federated credentials|Yes|No|
+|AgentIdentityBlueprint|Secrets / certificates|Yes|Yes|
+|AgentIdentityBlueprint|Owners / sponsors|Yes|(Yes)|
 |CAP|No or misconfigured policy for legacy authentication|-|Yes|
 |CAP|No or misconfigured policy for blocking device code flow|-|Yes|
 |CAP|No or misconfigured policy for limiting the registrations of security information|-|Yes|
@@ -645,6 +672,7 @@ To detect usage of EntraFalcon, blue teams can monitor for the listed applicatio
 - **M365 RBAC**: Not assessed
 - **Defender for Endpoint RBAC**: Not assessed
 - **Intune RBAC**: Not assessed
+- **Conditional Access user coverage**: Effective user coverage and `-ExportCapUncoveredUsers` are best-effort calculations based on enumerated users, group members, role assignments, and resolvable external-user categories. External-user selectors are only resolved for tenant guest users matching `b2bCollaborationGuest`. Other external-user types or external users with specified external tenants can make coverage values approximate. Eligible PIM paths are reported as potential coverage and are not counted as currently covered. CSV export is limited to enabled policies and enabled users.
 - **Cloud Environment**: Cloud platforms evolve rapidly. As a result, some assessments or detections may become outdated or inaccurate over time. Moreover, tenants are becoming increasingly complex, and specific configurations or combinations of settings may lead to inaccurate results. While we strive to keep EntraFalcon up to date, it is always recommended to validate findings independently and not rely solely on the tool for critical decisions.
 - **HTML Reports**: The generated HTML reports do not implement protection mechanisms against cross-site scripting (XSS).
 

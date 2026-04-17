@@ -15,6 +15,7 @@ function Invoke-CheckAppRegistrations {
         [Parameter(Mandatory=$true)][hashtable]$AllGroupsDetails,
         [Parameter(Mandatory=$true)][Object[]]$CurrentTenant,
         [Parameter(Mandatory=$true)][hashtable]$EnterpriseApps,
+        [Parameter(Mandatory=$true)][hashtable]$AgentObjectBasics,
         [Parameter(Mandatory=$true)][hashtable]$TenantRoleAssignments,
         [Parameter(Mandatory=$true)][String[]]$StartTimestamp,
         [Parameter(Mandatory=$false)][switch]$Csv = $false
@@ -90,6 +91,26 @@ function Invoke-CheckAppRegistrations {
                     Foreign = $MatchingEnterpriseApp.Foreign
                     PublisherName = $MatchingEnterpriseApp.PublisherName
                     OwnersCount = $MatchingEnterpriseApp.OwnersCount
+                    TargetReport = 'EnterpriseApps'
+                    ServicePrincipalType = $MatchingEnterpriseApp.ServicePrincipalType
+                }
+            }
+        }
+
+        if ($type -eq "agentIdentity" -or $type -eq "agentIdentityBlueprintPrincipal") {
+            # Resolve AgentObjects through the shared typed lookup.
+            $rawType = if ($type -eq "agentIdentity") { '#microsoft.graph.agentIdentity' } else { '#microsoft.graph.agentIdentityBlueprintPrincipal' }
+            $resolvedObject = Resolve-DirectoryObjectReference -ObjectId $Object -RawType $rawType -CurrentTenant $CurrentTenant -AllUsersBasicHT @{} -AllGroupsDetails @{} -ServicePrincipalBasics $EnterpriseApps -AgentObjectBasics $AgentObjectBasics
+            if ($resolvedObject) {
+                [PSCustomObject]@{
+                    Type                 = $resolvedObject.ObjectKind
+                    Id                   = $resolvedObject.Id
+                    DisplayName          = $resolvedObject.DisplayName
+                    Foreign              = $resolvedObject.Foreign
+                    PublisherName        = $resolvedObject.PublisherName
+                    OwnersCount          = "-"
+                    TargetReport         = $resolvedObject.TargetReport
+                    ServicePrincipalType = $resolvedObject.ServicePrincipalType
                 }
             }
         }
@@ -513,6 +534,25 @@ function Invoke-CheckAppRegistrations {
                         [void]$AppOwnerSPs.Add(
                             [PSCustomObject]@{
                                 Id = $OwnedObject.Id
+                                Type = "ServicePrincipal"
+                            }
+                        )
+                    }
+
+                    '#microsoft.graph.agentIdentity' {
+                        [void]$AppOwnerSPs.Add(
+                            [PSCustomObject]@{
+                                Id = $OwnedObject.Id
+                                Type = "agentIdentity"
+                            }
+                        )
+                    }
+
+                    '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+                        [void]$AppOwnerSPs.Add(
+                            [PSCustomObject]@{
+                                Id = $OwnedObject.Id
+                                Type = "agentIdentityBlueprintPrincipal"
                             }
                         )
                     }
@@ -521,9 +561,9 @@ function Invoke-CheckAppRegistrations {
         }
 
         $AppOwnersCount = $AppOwnerUsers.Count + $AppOwnerSPs.count
-        #Get more information about the SP
+        # Keep non-user app owners on one path while letting the shared resolver supply the correct target report and ownership metadata.
         $AppOwnerSPs = foreach ($Object in $AppOwnerSPs) {
-            GetObjectInfo $Object.Id -type "ServicePrincipal"
+            GetObjectInfo $Object.Id -type $Object.Type
         }
 
 
@@ -619,10 +659,10 @@ function Invoke-CheckAppRegistrations {
         #SP as owner
         if (($AppOwnerSPs | Measure-Object).count -ge 1) {
             if ($AppOwnerSPs.Foreign -contains $true) {
-                $Warnings += "Foreign SP as owner!"
+                $Warnings += "Foreign non-user owner!"
                 $LikelihoodScore += $AppLikelihoodScore["ExternalSPOwner"]
             } elseif ($AppOwnerSPs.Foreign -contains $false) {
-                $Warnings += "Internal SP as owner"
+                $Warnings += "Internal non-user owner"
                 $LikelihoodScore += $AppLikelihoodScore["InternalSPOwner"]
             }
         }
@@ -866,9 +906,14 @@ function Invoke-CheckAppRegistrations {
 
             if ($($item.AppOwnerSPs | Measure-Object).count -ge 1) {
                 $ReportingAppOwnersSP = foreach ($object in $($item.AppOwnerSPs)) {
+                    $ownerLink = switch ($object.TargetReport) {
+                        'AgentIdentities' { "<a href=AgentIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                        'AgentIdentityBlueprintsPrincipals' { "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                        default { "<a href=EnterpriseApps_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                    }
                     [pscustomobject]@{ 
                         "DisplayName" = $($object.DisplayName)
-                        "DisplayNameLink" = "<a href=EnterpriseApps_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>"
+                        "DisplayNameLink" = $ownerLink
                         "Foreign" = $($object.Foreign)
                         "PublisherName" = $($object.publisherName)
                         "OwnersCount" = $($object.OwnersCount)
@@ -876,7 +921,7 @@ function Invoke-CheckAppRegistrations {
                 }
 
                 [void]$DetailTxtBuilder.AppendLine("================================================================================================")
-                [void]$DetailTxtBuilder.AppendLine("Owners (Service Principals)")
+                [void]$DetailTxtBuilder.AppendLine("Owners (Service Principals / Agent Objects)")
                 [void]$DetailTxtBuilder.AppendLine("================================================================================================")
                 [void]$DetailTxtBuilder.AppendLine(($ReportingAppOwnersSP | format-table -Property DisplayName,Foreign,PublisherName,OwnersCount | Out-String))
                 $ReportingAppOwnersSP = foreach ($obj in $ReportingAppOwnersSP) {

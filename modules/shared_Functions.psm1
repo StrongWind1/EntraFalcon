@@ -696,7 +696,7 @@ $global:GLOBALJavaScript_Table = @'
                     description: "Azure role assignments held by service principals",
                     label: "Service Principal Assignments",
                     filters: {
-                        PrincipalType: "ServicePrincipal"
+                        PrincipalType: "ServicePrincipal||Enterprise Application||Agent Identity||Agent Identity Blueprint Principal||Managed Identity"
                     }
                 },
                 {
@@ -810,11 +810,280 @@ $global:GLOBALJavaScript_Table = @'
                     },
                     columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "ActivationMFA", "ActivationJustification", "ActivationTicketing", "ActivationApproval", "ActivationDuration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
                 }
+            ],
+            "Agent Identities": [
+                {
+                    id: "PVAI-001",
+                    group: "Privileges",
+                    description: "Agent identities with significant API permissions, role assignments, or object ownership",
+                    label: "Privileged Agent Identities",
+                    filters: {
+                        ApiDangerous: "or_>0",
+                        ApiHigh: "or_>0",
+                        ApiMedium: "or_>0",
+                        ApiDelegatedDangerous: "or_>0",
+                        ApiDelegatedHigh: "or_>0",
+                        EntraRoles: "or_>0",
+                        AzureRoles: "or_>0",
+                        AppOwn: "or_>0",
+                        SpOwn: "or_>0",
+                        GrpOwn: "or_>0"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiDelegatedDangerous", "ApiDelegatedHigh", "Impact", "Likelihood", "Risk", "Warnings"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVAI-002",
+                    group: "Privileges",
+                    description: "Agent identities with dangerous or high-severity application-level API permissions",
+                    label: "Dangerous / High Application Permissions",
+                    filters: {
+                        ApiDangerous: "or_>0",
+                        ApiHigh: "or_>0"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "LastSignInDays", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "Impact", "Likelihood", "Risk", "Warnings"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVAI-003",
+                    group: "Privileges",
+                    description: "Agent identities with dangerous or high-severity delegated API permissions",
+                    label: "Dangerous / High Delegated Permissions",
+                    filters: {
+                        ApiDelegatedDangerous: "or_>0",
+                        ApiDelegatedHigh: "or_>0"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "LastSignInDays", "ApiDelegatedDangerous", "ApiDelegatedHigh", "ApiDelegatedMedium", "ApiDelegatedLow", "ApiDelegatedMisc", "Impact", "Likelihood", "Risk", "Warnings"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVAI-004",
+                    group: "Privileges",
+                    description: "Agent identities holding Entra ID or Azure role assignments",
+                    label: "Agent Identities with Roles",
+                    filters: {
+                        EntraRoles: "or_>0",
+                        AzureRoles: "or_>0"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "Impact", "Likelihood", "Risk", "Warnings"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVAI-005",
+                    group: "Security",
+                    description: "Agent identities with ownership over apps, service principals, or groups",
+                    label: "Owning Other Objects",
+                    filters: {
+                        AppOwn: "or_>0",
+                        SpOwn: "or_>0",
+                        GrpOwn: "or_>0"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Enabled", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "Impact", "Likelihood", "Risk", "Warnings"]
+                },
+                {
+                    id: "PVAI-006",
+                    group: "Security",
+                    description: "Agent identities provisioned by a blueprint from a foreign (external) tenant",
+                    label: "Foreign Blueprint Origin",
+                    filters: {
+                        Foreign: "=True"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "Owners", "Sponsors", "AgentUsers", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "Impact", "Likelihood", "Risk", "Warnings"]
+                },
+                {
+                    id: "PVAI-007",
+                    group: "Lifecycle",
+                    description: "Enabled but no sign-on activity in the last 180 days.",
+                    label: "Inactive Agent Identities",
+                    filters: {
+                        Inactive: "=true",
+                        Enabled: "=true"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Enabled", "Inactive", "LastSignInDays", "CreationInDays", "Owners", "Sponsors", "AgentUsers", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "Impact", "Likelihood", "Risk", "Warnings"],
+                    sort: { column: "LastSignInDays", direction: "desc" }
+                },
+                {
+                    id: "PVAI-008",
+                    group: "Lifecycle",
+                    description: "Agent identities with no sponsor defined",
+                    label: "No Sponsor Assigned",
+                    filters: {
+                        Sponsors: "=0"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Enabled", "Inactive", "Sponsors", "Owners", "AgentUsers", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "Impact", "Likelihood", "Risk", "Warnings"]
+                }
+            ],
+            "Agent Identity Blueprint Principals": [
+                {
+                    id: "PVBPP-001",
+                    group: "Child Identities",
+                    description: "Blueprint principals with linked agent identities.",
+                    label: "With Agent Identities",
+                    filters: {
+                        AgentIdentities: ">0"
+                    },
+                    columns: ["DisplayName", "ParentBlueprintDisplayName", "Enabled", "Foreign", "AgentIdentities", "AgentUsers", "InheritedImpact", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVBPP-002",
+                    group: "Child Identities",
+                    description: "Blueprint principals with child agent users.",
+                    label: "With Agent Users",
+                    filters: {
+                        AgentUsers: ">0"
+                    },
+                    columns: ["DisplayName", "ParentBlueprintDisplayName", "Enabled", "Foreign", "AgentIdentities", "AgentUsers", "InheritedImpact", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVBPP-003",
+                    group: "Lifecycle",
+                    description: "Blueprint principals without linked agent identities.",
+                    label: "No Agent Identities",
+                    filters: {
+                        AgentIdentities: "=0"
+                    },
+                    columns: ["DisplayName", "ParentBlueprintDisplayName", "Enabled", "Foreign", "CreationInDays", "LastSignInDays", "ApiMedium", "ApiLow", "Impact", "Risk"],
+                    sort: { column: "CreationInDays", direction: "desc" }
+                },
+                {
+                    id: "PVBPP-004",
+                    group: "Tenant Boundary",
+                    description: "Blueprint principals whose parent blueprint is from another tenant.",
+                    label: "Foreign Principals",
+                    filters: {
+                        Foreign: "=True"
+                    },
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "AgentIdentities", "AgentUsers", "Impact", "Likelihood", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVBPP-005",
+                    group: "Lifecycle",
+                    description: "Enabled blueprint principals with no sign-in activity in the last 180 days.",
+                    label: "Inactive Enabled",
+                    filters: {
+                        Inactive: "=True",
+                        Enabled: "=True"
+                    },
+                    columns: ["DisplayName", "Enabled", "Inactive", "LastSignInDays", "CreationInDays", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    sort: { column: "LastSignInDays", direction: "desc" }
+                },
+                {
+                    id: "PVBPP-006",
+                    group: "API Permissions",
+                    description: "Blueprint principals with configured API permissions.",
+                    label: "Configured API Permissions",
+                    filters: {
+                        ApiDangerous: "or_>0",
+                        ApiHigh: "or_>0",
+                        ApiMedium: "or_>0",
+                        ApiDelegatedDangerous: "or_>0",
+                        ApiDelegatedHigh: "or_>0",
+                        ApiDelegatedMedium: "or_>0"
+                    },
+                    columns: ["DisplayName", "Enabled", "Foreign", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "ApiDelegatedDangerous", "ApiDelegatedHigh", "ApiDelegatedMedium", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                }
+            ],
+            "Agent Identity Blueprints": [
+                {
+                    id: "PVB-001",
+                    group: "Child Objects",
+                    description: "Blueprints with linked blueprint principals.",
+                    label: "With Blueprints Principals",
+                    filters: {
+                        BlueprintPrincipals: ">0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVB-002",
+                    group: "Child Objects",
+                    description: "Blueprints with child agent identities.",
+                    label: "With Agent Identities",
+                    filters: {
+                        AgentIdentities: ">0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVB-003",
+                    group: "Child Objects",
+                    description: "Blueprints with child agent users.",
+                    label: "With Agent Users",
+                    filters: {
+                        AgentUsers: ">0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVB-004",
+                    group: "Permissions",
+                    description: "Blueprints that allow inherit API permissions to the Agent Identity.",
+                    label: "Inheritable Permissions",
+                    filters: {
+                        InheritableScopes: "or_>0",
+                        InheritableRoles: "or_>0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVB-005",
+                    group: "Credentials",
+                    description: "Blueprints with federated credentials, client secrets, or certificates configured.",
+                    label: "Credentials Present",
+                    filters: {
+                        FederatedCreds: "or_>0",
+                        SecretsCount: "or_>0",
+                        CertsCount: "or_>0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "FederatedCreds", "SecretsCount", "CertsCount", "BlueprintPrincipals", "AgentIdentities", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVB-006",
+                    group: "Credentials",
+                    description: "Blueprints with client secrets.",
+                    label: "Client Secrets",
+                    filters: {
+                        SecretsCount: ">0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "SecretsCount", "CertsCount", "FederatedCreds", "CreationInDays", "Impact", "Risk"],
+                    sort: { column: "Risk", direction: "desc" }
+                },
+                {
+                    id: "PVB-007",
+                    group: "Lifecycle",
+                    description: "Blueprints without linked agent identities.",
+                    label: "No Agent Identities",
+                    filters: {
+                        AgentIdentities: "=0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "CreationInDays", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Risk"],
+                    sort: { column: "CreationInDays", direction: "desc" }
+                },
+                {
+                    id: "PVB-008",
+                    group: "Lifecycle",
+                    description: "Blueprints without linked blueprint principals.",
+                    label: "No Principals",
+                    filters: {
+                        BlueprintPrincipals: "=0"
+                    },
+                    columns: ["DisplayName", "SignInAudience", "CreationInDays", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Risk"],
+                    sort: { column: "CreationInDays", direction: "desc" }
+                }
             ]
         };
 
         //Define columns which are hidden by default
-        const defaultHidden = ["DeviceReg", "DeviceOwn", "LicenseStatus", "OwnersSynced", "DefaultMS", "CreationInDays", "AppRoleRequired", "SAML", "RoleAssignable", "LastSignInDays", "CreatedDays","ActiveAssignJustification","AlertAssignEligible","AlertAssignActive", "AlertActivation", "EligibleExpirationTime", "ActiveExpirationTime", "SignInFrequency", "SignInFrequencyInterval", "ApiDelegatedDangerous", "ApiDelegatedHigh", "ApiDelegatedMedium", "ApiDelegatedLow", "ApiDelegatedMisc", "IncUsersViaGroups", "ExcUsersViaGroups", "PerUserMfa"];
+        const defaultHidden = ["DeviceReg", "DeviceOwn", "LicenseStatus", "OwnersSynced", "DefaultMS", "CreationInDays", "AppRoleRequired", "SAML", "RoleAssignable", "LastSignInDays", "CreatedDays", "ParentBlueprintDisplayName","ActiveAssignJustification","AlertAssignEligible","AlertAssignActive", "AlertActivation", "EligibleExpirationTime", "ActiveExpirationTime", "SignInFrequency", "SignInFrequencyInterval", "ApiDelegatedDangerous", "ApiDelegatedHigh", "ApiDelegatedMedium", "ApiDelegatedLow", "ApiDelegatedMisc", "IncUsersViaGroups", "ExcUsersViaGroups", "PerUserMfa", "ExcUsersViaRoles", "IncUsersViaRoles"];
 
         // Function to obtain the GET parameters from the URL
         function getURLParams() {
@@ -860,7 +1129,11 @@ $global:GLOBALJavaScript_Table = @'
             "Direct": "Number of directly assigned active role assignments that are not activated via PIM",
             "Activated": "Number of currently active role assignments activated via PIM",
             "AssignmentType": "Activated eligible assignments also appear as active",
-            "Conditions": "Has additional conditions"
+            "Conditions": "Has additional conditions",
+            "UserCoverage": "Percentage of tenant users covered by the policy after exclusions. External users are only approximated for b2bCollaborationGuest and do not include all types or tenant-specific selections.",
+            "InheritableScopes": "Number of APIs for which the blueprint permits child agent identities to inherit delegated permission scopes",
+            "InheritableRoles": "Number of APIs for which the blueprint permits child agent identities to inherit application role permissions",
+            "Agent": "User object parented to an agent identity (agent user)"
         };
     
         (function () {    
@@ -1053,6 +1326,9 @@ $global:GLOBALJavaScript_Table = @'
             if (key === "PIM") return "PIM";
             if (key === "RoleEntra") return "Role Assignments Entra ID";
             if (key === "RoleAz") return "Role Assignments Azure IAM";
+            if (key === "AgentIdentities") return "Agent Identities";
+            if (key === "AgentIdentityBlueprintsPrincipals") return "Agent Identity Blueprint Principals";
+            if (key === "AgentIdentityBlueprints") return "Agent Identity Blueprints";
 
             var lower = name.toLowerCase();
             if (lower.indexOf("users") !== -1) return "User";
@@ -1422,13 +1698,17 @@ $global:GLOBALJavaScript_Table = @'
             if (!column) return;
             const isTierColumn = ["entramaxtier", "azuremaxtier"].includes(String(column).toLowerCase());
 
+            function normalizeApproximateDisplay(val) {
+                return String(val ?? '').trim().replace(/^[~≈]\s*/, '');
+            }
+
             function extractText(val) {
                 if (typeof val === "string") {
                     // Extract text inside anchor if present
                     const match = val.match(/<a[^>]*>(.*?)<\/a>/i);
-                    return match ? match[1] : val;
+                    return normalizeApproximateDisplay(match ? match[1] : val);
                 }
-                return val ?? '';
+                return normalizeApproximateDisplay(val ?? '');
             }
 
             function getTierRank(val) {
@@ -1480,6 +1760,10 @@ $global:GLOBALJavaScript_Table = @'
                 return tempDiv.textContent || tempDiv.innerText || '';
             }
 
+            function normalizeApproximateDisplay(val) {
+                return String(val ?? '').trim().replace(/^[~≈]\s*/, '');
+            }
+
             // Support simple OR: "value1 || value2"
             if (input.includes('||')) {
                 return input.split('||').some(part => parseOperatorFilter(part.trim(), rawValue));
@@ -1488,6 +1772,7 @@ $global:GLOBALJavaScript_Table = @'
                 return input.split('&&').map(part => part.trim()).filter(Boolean).every(part => parseOperatorFilter(part, rawValue));
             }
             const visibleText = extractText(rawValue).trim();
+            const normalizedVisibleText = normalizeApproximateDisplay(visibleText);
             const valStr = visibleText.toLowerCase();
             const rawStr = String(rawValue).toLowerCase(); // includes HTML
             const lowerInput = input.toLowerCase();
@@ -1512,23 +1797,23 @@ $global:GLOBALJavaScript_Table = @'
 
                 switch (op) {
                     case '=':
-                        if (isNumeric && !isNaN(parseFloat(visibleText))) {
-                            result = parseFloat(visibleText) === num;
+                        if (isNumeric && !isNaN(parseFloat(normalizedVisibleText))) {
+                            result = parseFloat(normalizedVisibleText) === num;
                         } else {
                             result = valStr === filterStr;
                         }
                         break;
                     case '<':
-                        result = isNumeric && parseFloat(visibleText) < num;
+                        result = isNumeric && parseFloat(normalizedVisibleText) < num;
                         break;
                     case '<=':
-                        result = isNumeric && parseFloat(visibleText) <= num;
+                        result = isNumeric && parseFloat(normalizedVisibleText) <= num;
                         break;
                     case '>':
-                        result = isNumeric && parseFloat(visibleText) > num;
+                        result = isNumeric && parseFloat(normalizedVisibleText) > num;
                         break;
                     case '>=':
-                        result = isNumeric && parseFloat(visibleText) >= num;
+                        result = isNumeric && parseFloat(normalizedVisibleText) >= num;
                         break;
                     case '^':
                         result = valStr.startsWith(filterStr);
@@ -1799,6 +2084,145 @@ $global:GLOBALJavaScript_Table = @'
             });
             window.__objectsById = objectsById;
 
+            const isCapEffectiveTargetingSection = (key, value) => {
+                const manifest = window.__reportManifest;
+                const reportKey = manifest && manifest.currentReportKey ? String(manifest.currentReportKey).trim() : "";
+                return reportKey === "CAP" && key === "Effective Targeting (Users)" && Array.isArray(value);
+            };
+
+            const parseCapTargetingDisplayNumber = (value) => {
+                const normalized = String(value ?? "")
+                    .replace(/^\s*~\s*/, "")
+                    .trim();
+
+                if (!normalized || normalized === "-" || normalized.toLowerCase() === "none") {
+                    return null;
+                }
+
+                const match = normalized.match(/\d+(?:\.\d+)?/);
+                return match ? Number(match[0]) : null;
+            };
+
+            const hasMeaningfulCapTargetingRowValues = (values) => {
+                return values.some(value => {
+                    if (value === null || value === undefined) return false;
+                    const text = String(value).trim();
+                    if (!text || text === "-") return false;
+                    return text !== "0" && text !== "0.0" && text !== "0.0%";
+                });
+            };
+
+            const appendCapTargetingTable = (section, caption, headers, rows, totalRowIndexes) => {
+                if (!rows || rows.length === 0) return;
+
+                const label = document.createElement("div");
+                label.className = "cap-targeting-caption";
+                label.textContent = caption;
+                section.appendChild(label);
+
+                const table = document.createElement("table");
+                table.className = "property-table cap-targeting-table";
+
+                const headerRow = table.insertRow();
+                headers.forEach(text => {
+                    const th = document.createElement("th");
+                    th.textContent = text;
+                    headerRow.appendChild(th);
+                });
+
+                rows.forEach((values, rowIndex) => {
+                    const row = table.insertRow();
+                    if (Array.isArray(totalRowIndexes) && totalRowIndexes.includes(rowIndex)) {
+                        row.className = "cap-targeting-total";
+                    }
+
+                    values.forEach((value, cellIndex) => {
+                        const cell = row.insertCell();
+                        if (cellIndex === 0) {
+                            cell.classList.add("left-align");
+                        } else {
+                            cell.classList.add("cap-targeting-number");
+                        }
+
+                        if (String(value ?? "").trim() === "-") {
+                            cell.classList.add("cap-targeting-muted");
+                        }
+
+                        if (typeof value === "string" && value.startsWith("<a")) {
+                            cell.innerHTML = value;
+                        } else {
+                            cell.textContent = value ?? "";
+                        }
+                    });
+                });
+
+                section.appendChild(table);
+            };
+
+            const renderCapEffectiveTargetingDetails = (rows, notes) => {
+                const section = document.createElement("div");
+                const heading = document.createElement("h3");
+                heading.textContent = "Effective Targeting (Users)";
+                section.appendChild(heading);
+
+                const included = rows.find(row => String(row.Scope || "").trim().toLowerCase() === "included") || {};
+                const excluded = rows.find(row => String(row.Scope || "").trim().toLowerCase() === "excluded") || {};
+                const total = rows.find(row => String(row.Scope || "").trim().toLowerCase() === "total") || {};
+
+                const totalEffectiveUsers = parseCapTargetingDisplayNumber(total.EffectiveUsers);
+                const uncoveredUsers = parseCapTargetingDisplayNumber(total.UncoveredUsers);
+                const totalUsers = (totalEffectiveUsers !== null && uncoveredUsers !== null)
+                    ? totalEffectiveUsers + uncoveredUsers
+                    : null;
+
+                const summaryUserCoverage = totalUsers !== null
+                    ? `${total.UserCoverage} (${total.EffectiveUsers} / ${totalUsers})`
+                    : (total.UserCoverage ?? "");
+
+                const summaryRows = [
+                    ["UserCoverage", summaryUserCoverage],
+                    ["Included Effective Users", included.EffectiveUsers ?? ""],
+                    ["Excluded Effective Users", excluded.EffectiveUsers ?? ""],
+                    ["Total Uncovered Users", total.UncoveredUsers ?? ""]
+                ];
+                appendCapTargetingTable(section, "Summary", ["Metric", "Value"], summaryRows, [3]);
+
+                const breakdownRows = [
+                    ["Direct Users", included.DirectUsers ?? "-", excluded.DirectUsers ?? "-"],
+                    ["Users from Groups", included.UsersViaGroups ?? "-", excluded.UsersViaGroups ?? "-"],
+                    ["Users from Roles", included.UsersViaRoles ?? "-", excluded.UsersViaRoles ?? "-"],
+                    ["External Users", included.UsersViaExternalCategories ?? "-", excluded.UsersViaExternalCategories ?? "-"],
+                    ["Deduplicated Overlap", included.Overlap ?? "-", excluded.Overlap ?? "-"]
+                ];
+                appendCapTargetingTable(section, "Breakdown", ["Metric", "Included", "Excluded"], breakdownRows);
+
+                const eligibleRows = [
+                    ["Eligible via Groups", included.PotentialUsersViaGroups ?? "-", excluded.PotentialUsersViaGroups ?? "-"],
+                    ["Eligible via Roles", included.PotentialUsersViaRoles ?? "-", excluded.PotentialUsersViaRoles ?? "-"]
+                ].filter(row => hasMeaningfulCapTargetingRowValues(row.slice(1)));
+                appendCapTargetingTable(section, "Eligible But Not Currently Effective", ["Metric", "Included", "Excluded"], eligibleRows);
+
+                if (notes) {
+                    const notesLabel = document.createElement("div");
+                    notesLabel.className = "cap-targeting-caption";
+                    notesLabel.textContent = "Notes";
+                    section.appendChild(notesLabel);
+
+                    String(notes)
+                        .split(/\r?\n/)
+                        .map(line => line.trim())
+                        .filter(Boolean)
+                        .forEach(line => {
+                            const noteEl = document.createElement("p");
+                            noteEl.className = "detail-note";
+                            noteEl.textContent = line;
+                            section.appendChild(noteEl);
+                        });
+                }
+
+                return section;
+            };
+
             const renderDetailsTable = (title, data) => {
                 const section = document.createElement('div');
                 const heading = document.createElement('h3');
@@ -1832,7 +2256,17 @@ $global:GLOBALJavaScript_Table = @'
 
                 for (let [key, value] of Object.entries(obj)) {
                     key = key.trim();
+                    if (key === "Object Name" || key === "Object ID" || key === "ObjectId" || key === "Id") continue;
                     if (!value || (Array.isArray(value) && value.length === 0)) continue;
+
+                    if (isCapEffectiveTargetingSection(key, value)) {
+                        detailsEl.appendChild(renderCapEffectiveTargetingDetails(value, obj["Effective Targeting (Users) Notes"]));
+                        continue;
+                    }
+
+                    if (key === "Effective Targeting (Users) Notes" && isCapEffectiveTargetingSection("Effective Targeting (Users)", obj["Effective Targeting (Users)"])) {
+                        continue;
+                    }
 
                     if (Array.isArray(value)) {
                         const allStrings = value.every(v => typeof v === 'string');
@@ -1849,6 +2283,11 @@ $global:GLOBALJavaScript_Table = @'
                         } else {
                             detailsEl.appendChild(renderDetailsTable(key, [value]));
                         }
+                    } else if (typeof value === 'string') {
+                        const noteEl = document.createElement('p');
+                        noteEl.className = 'detail-note';
+                        noteEl.textContent = value;
+                        detailsEl.appendChild(noteEl);
                     }
                 }
 
@@ -3025,6 +3464,36 @@ $global:GLOBALCss = @"
         overflow-x: auto;
     }
 
+    .detail-note {
+        font-size: 11px;
+        font-style: italic;
+        margin: 2px 0 8px 0;
+        opacity: 0.75;
+    }
+
+    .cap-targeting-caption {
+        font-size: 12px;
+        font-weight: bold;
+        margin: 16px 0 2px 0;
+    }
+
+    .cap-targeting-table {
+        margin-top: 0;
+    }
+
+    .cap-targeting-muted {
+        opacity: 0.65;
+    }
+
+    .cap-targeting-number {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .cap-targeting-total td {
+        font-weight: 700;
+    }
+
     #toggle-expand {
         border-radius: 4px;
         padding: 6px 12px;
@@ -4196,6 +4665,213 @@ function Get-UsersBasic {
     return $AllUsersBasicHT
 }
 
+function Get-AgentObjectBasics {
+    Param (
+        [Parameter(Mandatory = $true)][Object[]]$CurrentTenant,
+        [Parameter(Mandatory = $true)][int]$ApiTop
+    )
+
+    # Preload the agent-specific object metadata that the generic service principal list cannot represent correctly.
+    write-host "[*] Retrieve basic agent object list"
+
+    $agentObjectBasics = @{
+        AgentIdentities = @{}
+        AgentIdentityBlueprintsPrincipals = @{}
+    }
+
+    $agentIdentityQueryParameters = @{
+        '$select' = "Id,DisplayName,PublisherName,accountEnabled,appOwnerOrganizationId,servicePrincipalType"
+        '$top' = $ApiTop
+    }
+    $agentIdentitiesRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/servicePrincipals/Microsoft.Graph.AgentIdentity' -QueryParameters $agentIdentityQueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+    foreach ($item in @($agentIdentitiesRaw)) {
+        $appOwnerOrganizationId = "$($item.AppOwnerOrganizationId)".Trim()
+        $publisherName = if ([string]::IsNullOrWhiteSpace($item.PublisherName)) { "-" } else { $item.PublisherName }
+        $foreign = (-not [string]::IsNullOrWhiteSpace($appOwnerOrganizationId) -and $appOwnerOrganizationId -ne $CurrentTenant.id)
+        $defaultMS = ($appOwnerOrganizationId -and $GLOBALMsTenantIds -contains $appOwnerOrganizationId)
+
+        $agentObjectBasics.AgentIdentities[$item.Id] = [pscustomobject]@{
+            Id                   = $item.Id
+            DisplayName          = $item.DisplayName
+            Enabled              = $item.accountEnabled
+            PublisherName        = $publisherName
+            Foreign              = $foreign
+            DefaultMS            = $defaultMS
+            ObjectKind           = 'AgentIdentity'
+            TargetReport         = 'AgentIdentities'
+            ServicePrincipalType = $item.servicePrincipalType
+        }
+    }
+
+    $blueprintPrincipalQueryParameters = @{
+        '$filter' = "ServicePrincipalType eq 'Application'"
+        '$select' = "Id,DisplayName,PublisherName,accountEnabled,appOwnerOrganizationId,servicePrincipalType"
+        '$top' = $ApiTop
+    }
+    $blueprintPrincipalsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/servicePrincipals/graph.agentIdentityBlueprintPrincipal' -QueryParameters $blueprintPrincipalQueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+    foreach ($item in @($blueprintPrincipalsRaw)) {
+        $appOwnerOrganizationId = "$($item.AppOwnerOrganizationId)".Trim()
+        $publisherName = if ([string]::IsNullOrWhiteSpace($item.PublisherName)) { "-" } else { $item.PublisherName }
+        $foreign = ($appOwnerOrganizationId -ne $CurrentTenant.id)
+        $defaultMS = ($GLOBALMsTenantIds -contains $appOwnerOrganizationId)
+
+        $agentObjectBasics.AgentIdentityBlueprintsPrincipals[$item.Id] = [pscustomobject]@{
+            Id                   = $item.Id
+            DisplayName          = $item.DisplayName
+            Enabled              = $item.accountEnabled
+            PublisherName        = $publisherName
+            Foreign              = $foreign
+            DefaultMS            = $defaultMS
+            ObjectKind           = 'AgentIdentityBlueprintPrincipal'
+            TargetReport         = 'AgentIdentityBlueprintsPrincipals'
+            ServicePrincipalType = $item.servicePrincipalType
+        }
+    }
+
+    Write-Log -Level Verbose -Message "Got $($agentObjectBasics.AgentIdentities.Count) agent identities and $($agentObjectBasics.AgentIdentityBlueprintsPrincipals.Count) agent identity blueprint principals"
+    return $agentObjectBasics
+}
+
+function Get-ServicePrincipalSignInActivityLookup {
+    Param (
+        [Parameter(Mandatory = $true)][int]$ApiTop
+    )
+
+    write-host "[*] Get service principal sign-in activity"
+
+    $AppLastSignIns = @{}
+    $AppLastSignInsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/reports/servicePrincipalSignInActivities" -BetaAPI -QueryParameters @{ '$top' = $ApiTop } -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+
+    foreach ($app in @($AppLastSignInsRaw)) {
+        if ([string]::IsNullOrWhiteSpace($app.appId)) { continue }
+
+        $AppLastSignIns[$app.appId] = @{
+            id = $app.appId
+            lastSignIn = if ($app.lastSignInActivity.lastSignInDateTime) {$app.lastSignInActivity.lastSignInDateTime} else { "-" }
+            lastSignInDays = if ($app.lastSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.lastSignInActivity.lastSignInDateTime).Days } else { "-" }
+
+            lastSignInAppAsClient = if ($app.applicationAuthenticationClientSignInActivity.lastSignInDateTime) {$app.applicationAuthenticationClientSignInActivity.lastSignInDateTime} else { "-" }
+            lastSignInAppAsClientDays = if ($app.applicationAuthenticationClientSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.applicationAuthenticationClientSignInActivity.lastSignInDateTime).Days } else { "-" }
+
+            lastSignInAppAsResource = if ($app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime) {$app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime} else { "-" }
+            lastSignInAppAsResourceDays = if ($app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime).Days } else { "-" }
+
+            lastSignInDelegatedAsClient = if ($app.delegatedClientSignInActivity.lastSignInDateTime) {$app.delegatedClientSignInActivity.lastSignInDateTime} else { "-" }
+            lastSignInDelegatedAsClientDays = if ($app.delegatedClientSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.delegatedClientSignInActivity.lastSignInDateTime).Days } else { "-" }
+
+            lastSignInDelegatedAsResource = if ($app.delegatedResourceSignInActivity.lastSignInDateTime) {$app.delegatedResourceSignInActivity.lastSignInDateTime} else { "-" }
+            lastSignInDelegatedAsResourceDays = if ($app.delegatedResourceSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.delegatedResourceSignInActivity.lastSignInDateTime).Days } else { "-" }
+        }
+    }
+
+    Write-Log -Level Debug -Message "Got $($AppLastSignInsRaw.Count) app last sign-in dates"
+    return $AppLastSignIns
+}
+
+function Resolve-DirectoryObjectReference {
+    Param (
+        [Parameter(Mandatory = $true)][string]$ObjectId,
+        [Parameter(Mandatory = $true)][string]$RawType,
+        [Parameter(Mandatory = $true)][Object[]]$CurrentTenant,
+        [Parameter(Mandatory = $false)][hashtable]$AllUsersBasicHT = @{},
+        [Parameter(Mandatory = $false)][hashtable]$AllGroupsDetails = @{},
+        [Parameter(Mandatory = $false)][hashtable]$ServicePrincipalBasics = @{},
+        [Parameter(Mandatory = $false)][hashtable]$AgentObjectBasics = @{}
+    )
+
+    # Resolve mixed directory object references through the typed lookup that owns the source-of-truth metadata.
+    $normalizedId = "$ObjectId".Trim()
+    if ([string]::IsNullOrWhiteSpace($normalizedId)) {
+        return $null
+    }
+
+    switch ($RawType) {
+        '#microsoft.graph.user' {
+            if (-not $AllUsersBasicHT.ContainsKey($normalizedId)) { return $null }
+            $user = $AllUsersBasicHT[$normalizedId]
+            $displayName = if ([string]::IsNullOrWhiteSpace($user.UserPrincipalName)) { $normalizedId } else { $user.UserPrincipalName }
+            return [pscustomobject]@{
+                Id                   = $normalizedId
+                DisplayName          = $displayName
+                Enabled              = $user.accountEnabled
+                PublisherName        = '-'
+                Foreign              = $false
+                DefaultMS            = $false
+                ObjectKind           = 'User'
+                TargetReport         = 'Users'
+                ServicePrincipalType = $null
+            }
+        }
+
+        '#microsoft.graph.agentUser' {
+            if (-not $AllUsersBasicHT.ContainsKey($normalizedId)) { return $null }
+            $user = $AllUsersBasicHT[$normalizedId]
+            $displayName = if ([string]::IsNullOrWhiteSpace($user.UserPrincipalName)) { $normalizedId } else { $user.UserPrincipalName }
+            return [pscustomobject]@{
+                Id                   = $normalizedId
+                DisplayName          = $displayName
+                Enabled              = $user.accountEnabled
+                PublisherName        = '-'
+                Foreign              = $false
+                DefaultMS            = $false
+                ObjectKind           = 'AgentUser'
+                TargetReport         = 'Users'
+                ServicePrincipalType = $null
+            }
+        }
+
+        '#microsoft.graph.group' {
+            if (-not $AllGroupsDetails.ContainsKey($normalizedId)) { return $null }
+            $group = $AllGroupsDetails[$normalizedId]
+            return [pscustomobject]@{
+                Id                   = $normalizedId
+                DisplayName          = $group.DisplayName
+                Enabled              = $null
+                PublisherName        = '-'
+                Foreign              = $false
+                DefaultMS            = $false
+                ObjectKind           = 'Group'
+                TargetReport         = 'Groups'
+                ServicePrincipalType = $null
+            }
+        }
+
+        '#microsoft.graph.servicePrincipal' {
+            if (-not $ServicePrincipalBasics.ContainsKey($normalizedId)) { return $null }
+            $sp = $ServicePrincipalBasics[$normalizedId]
+            $foreign = ($sp.servicePrincipalType -ne "ManagedIdentity" -and $sp.AppOwnerOrganizationId -ne $CurrentTenant.id)
+            $defaultMS = ($sp.servicePrincipalType -ne "ManagedIdentity" -and $GLOBALMsTenantIds -contains $sp.AppOwnerOrganizationId)
+            $objectKind = if ($sp.servicePrincipalType -eq 'ManagedIdentity') { 'ManagedIdentity' } else { 'ServicePrincipal' }
+            $targetReport = if ($sp.servicePrincipalType -eq 'ManagedIdentity') { 'ManagedIdentities' } else { 'EnterpriseApps' }
+            return [pscustomobject]@{
+                Id                   = $sp.Id
+                DisplayName          = $sp.DisplayName
+                Enabled              = $sp.accountEnabled
+                PublisherName        = $sp.publisherName
+                Foreign              = $foreign
+                DefaultMS            = $defaultMS
+                ObjectKind           = $objectKind
+                TargetReport         = $targetReport
+                ServicePrincipalType = $sp.servicePrincipalType
+            }
+        }
+
+        '#microsoft.graph.agentIdentity' {
+            $agentIdentities = if ($AgentObjectBasics.ContainsKey('AgentIdentities')) { $AgentObjectBasics.AgentIdentities } else { @{} }
+            if (-not $agentIdentities.ContainsKey($normalizedId)) { return $null }
+            return $agentIdentities[$normalizedId]
+        }
+
+        '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+            $principals = if ($AgentObjectBasics.ContainsKey('AgentIdentityBlueprintsPrincipals')) { $AgentObjectBasics.AgentIdentityBlueprintsPrincipals } else { @{} }
+            if (-not $principals.ContainsKey($normalizedId)) { return $null }
+            return $principals[$normalizedId]
+        }
+    }
+
+    return $null
+}
+
 #Get Basic User Infos
 function Get-Devices {
     Param (
@@ -4504,6 +5180,7 @@ $global:GLOBALApiPermissionCategorizationList= @{
     "b8bb2037-6e08-44ac-a4ea-4674e010e2a4" = "Medium" #OnlineMeetings.ReadWrite.All  
     "de89b5e4-5b8f-48eb-8925-29c2b33bd8bd" = "Medium" #CustomSecAttributeAssignment.ReadWrite.All
     "89c8469c-83ad-45f7-8ff2-6e3d4285709e" = "Medium" #ServicePrincipalEndpoint.ReadWrite.All (Still an issue?)
+    "4aa6e624-eee0-40ab-bdd8-f9639038a614" = "Medium" #AgentIdUser.ReadWrite.IdentityParentedBy
     "4c390976-b2b7-42e0-9187-c6be3bead001" = "Low" #AgentIdentity.CreateAsManager
 }
 
@@ -4866,6 +5543,52 @@ function Get-AllAzureIAMAssignmentsNative {
         return $Scope
     }
 
+    # Build a normalized lookup key so active role assignments can be matched
+    # against Azure PIM schedule instances even when the ARM object IDs differ.
+    function Get-AzureIamAssignmentLookupKey {
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$PrincipalId,
+            [Parameter(Mandatory = $true)]
+            [string]$RoleDefinitionId,
+            [Parameter(Mandatory = $false)]
+            [string]$Scope
+        )
+
+        $normalizedScope = if ([string]::IsNullOrWhiteSpace($Scope)) { "/" } else { $Scope }
+        return ("{0}|{1}|{2}" -f $PrincipalId, $RoleDefinitionId, $normalizedScope).ToLowerInvariant()
+    }
+
+    # Keep the most relevant schedule instance for a lookup key. When multiple
+    # instances exist, prefer the one with the latest end time.
+    function Set-AzureScheduleLookupEntry {
+        param(
+            [Parameter(Mandatory = $true)]
+            [hashtable]$Lookup,
+            [Parameter(Mandatory = $true)]
+            [string]$Key,
+            [Parameter(Mandatory = $true)]
+            [pscustomobject]$Entry
+        )
+
+        if ([string]::IsNullOrWhiteSpace($Key)) {
+            return
+        }
+
+        if (-not $Lookup.ContainsKey($Key)) {
+            $Lookup[$Key] = $Entry
+            return
+        }
+
+        $existingEntry = $Lookup[$Key]
+        $existingEnd = if ($null -ne $existingEntry.EndDateTime -and -not [string]::IsNullOrWhiteSpace([string]$existingEntry.EndDateTime)) { [datetime]$existingEntry.EndDateTime } else { [datetime]::MinValue }
+        $newEnd = if ($null -ne $Entry.EndDateTime -and -not [string]::IsNullOrWhiteSpace([string]$Entry.EndDateTime)) { [datetime]$Entry.EndDateTime } else { [datetime]::MinValue }
+
+        if ($newEnd -gt $existingEnd) {
+            $Lookup[$Key] = $Entry
+        }
+    }
+
     #Get all Azure roles for lookup
     $url = "https://management.azure.com/providers/Microsoft.Authorization/roleDefinitions?api-version=2022-04-01"
     $response = @(Send-ApiRequest -Method GET -Uri $url -AccessToken $GLOBALArmAccessToken.access_token -UserAgent $($GlobalAuditSummary.UserAgent.Name) -ErrorAction Stop)
@@ -4905,12 +5628,62 @@ function Get-AllAzureIAMAssignmentsNative {
 
 
     foreach ($subscription in $subscriptions) {       
+        # Two lookup strategies are used for Azure PIM activations:
+        # - by originating roleAssignment id when ARM provides a direct link
+        # - by principal/role/scope as a fallback for less explicit responses
+        $ActiveScheduleAssignmentsByOriginId = @{}
+        $ActiveScheduleAssignmentsByKey = @{}
+
+        try {
+            Write-Log -Level Debug -Message "Checking PIM activation schedule instances for subscription $($subscription.Id)"
+            $url = "https://management.azure.com/subscriptions/$($subscription.Id)/providers/Microsoft.Authorization/roleAssignmentScheduleInstances?api-version=2020-10-01"
+            $AssignmentScheduleInstances = @(Send-ApiRequest -Method GET -Uri $url -AccessToken $GLOBALArmAccessToken.access_token -UserAgent $($GlobalAuditSummary.UserAgent.Name) -Silent -ErrorAction Stop)
+
+            foreach ($instance in $AssignmentScheduleInstances) {
+                $instanceProperties = $instance.properties
+                if ($null -eq $instanceProperties) {
+                    continue
+                }
+
+                $roleId = ($instanceProperties.roleDefinitionId -split '/')[-1]
+                $lookupKey = Get-AzureIamAssignmentLookupKey -PrincipalId ([string]$instanceProperties.principalId) -RoleDefinitionId ([string]$roleId) -Scope ([string]$instanceProperties.scope)
+                $linkedEligibilityScheduleId = [string]$instanceProperties.linkedRoleEligibilityScheduleId
+                # Only schedule instances linked to an eligibility schedule are
+                # considered PIM activations. Plain scheduled direct assignments
+                # must not be reported as "ActivatedViaPIM".
+                if (
+                    [string]::IsNullOrWhiteSpace($linkedEligibilityScheduleId) -and
+                    [string]::IsNullOrWhiteSpace([string]$instanceProperties.linkedRoleEligibilityScheduleInstanceId)
+                ) {
+                    continue
+                }
+
+                $scheduleEntry = [pscustomobject]@{
+                    StartDateTime          = $instanceProperties.startDateTime
+                    EndDateTime            = $instanceProperties.endDateTime
+                    OriginRoleAssignmentId = [string]$instanceProperties.originRoleAssignmentId
+                }
+
+                Set-AzureScheduleLookupEntry -Lookup $ActiveScheduleAssignmentsByKey -Key $lookupKey -Entry $scheduleEntry
+
+                if (-not [string]::IsNullOrWhiteSpace($scheduleEntry.OriginRoleAssignmentId)) {
+                    Set-AzureScheduleLookupEntry -Lookup $ActiveScheduleAssignmentsByOriginId -Key $scheduleEntry.OriginRoleAssignmentId.ToLowerInvariant() -Entry $scheduleEntry
+                }
+            }
+
+            Write-Log -Level Debug -Message "Got $($ActiveScheduleAssignmentsByKey.Count) Azure PIM activation schedule instances for subscription $($subscription.Id)"
+        } catch {
+            Write-Log -Level Debug -Message "Unable to enrich Azure role assignments with PIM activation data for subscription $($subscription.Id): $($_.Exception.Message)"
+        }
+
         #Active Roles
         $url = "https://management.azure.com/subscriptions/$($subscription.Id)/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01"
         $response = @(Send-ApiRequest -Method GET -Uri $url -AccessToken $GLOBALArmAccessToken.access_token -UserAgent $($GlobalAuditSummary.UserAgent.Name) -ErrorAction Stop)
         $AssignmentsActive = $response | ForEach-Object {
             $roleId = ($_.properties.roleDefinitionId -split '/')[-1]
-            $resolvedScope = Resolve-AzureIamScopePath -Scope $_.properties.scope
+            $rawScope = [string]$_.properties.scope
+            $resolvedScope = Resolve-AzureIamScopePath -Scope $rawScope
+            $lookupKey = Get-AzureIamAssignmentLookupKey -PrincipalId ([string]$_.properties.principalId) -RoleDefinitionId ([string]$roleId) -Scope $rawScope
 
             # Null safe check
             if (-not $roleHashTable.ContainsKey($roleId)) {
@@ -4928,8 +5701,23 @@ function Get-AllAzureIAMAssignmentsNative {
                 # Set to ? if not assigned to a tier level
                 $RoleTier = "?"
             }
+
+            # Prefer an explicit origin-roleAssignment match. Only fall back to
+            # the composite key when ARM did not expose an origin assignment id.
+            $ActiveScheduleAssignment = $null
+            $roleAssignmentId = [string]$_.id
+            if (-not [string]::IsNullOrWhiteSpace($roleAssignmentId) -and $ActiveScheduleAssignmentsByOriginId.ContainsKey($roleAssignmentId.ToLowerInvariant())) {
+                $ActiveScheduleAssignment = $ActiveScheduleAssignmentsByOriginId[$roleAssignmentId.ToLowerInvariant()]
+            } elseif ($ActiveScheduleAssignmentsByKey.ContainsKey($lookupKey)) {
+                $scheduleCandidate = $ActiveScheduleAssignmentsByKey[$lookupKey]
+                if ([string]::IsNullOrWhiteSpace([string]$scheduleCandidate.OriginRoleAssignmentId)) {
+                    $ActiveScheduleAssignment = $scheduleCandidate
+                }
+            }
+
             [PSCustomObject]@{
                 ObjectId           = $_.properties.principalId
+                RoleAssignmentId   = $roleAssignmentId
                 RoleDefinitionName = $RoleDetails.RoleName
                 RoleType           = $RoleDetails.RoleType
                 RoleTier           = $RoleTier
@@ -4937,6 +5725,9 @@ function Get-AllAzureIAMAssignmentsNative {
                 Conditions         = $hasCondition 
                 PrincipalType      = $_.properties.principalType
                 AssignmentType     = "Active"
+                ActivatedViaPIM    = ($null -ne $ActiveScheduleAssignment)
+                StartDateTime      = if ($null -ne $ActiveScheduleAssignment -and $null -ne $ActiveScheduleAssignment.StartDateTime) { $ActiveScheduleAssignment.StartDateTime } else { "-" }
+                EndDateTime        = if ($null -ne $ActiveScheduleAssignment -and $null -ne $ActiveScheduleAssignment.EndDateTime) { $ActiveScheduleAssignment.EndDateTime } else { "Permanent" }
             }
         }
         Write-Log -Level Debug -Message "Got $($AssignmentsActive.count) active role assignments"
@@ -4981,11 +5772,16 @@ function Get-AllAzureIAMAssignmentsNative {
                     Conditions         = $hasCondition 
                     PrincipalType      = $_.properties.principalType
                     AssignmentType     = "Eligible"
+                    ActivatedViaPIM    = $false
+                    StartDateTime      = if ($null -ne $_.properties.startDateTime) { $_.properties.startDateTime } else { "-" }
+                    EndDateTime        = if ($null -ne $_.properties.endDateTime) { $_.properties.endDateTime } else { "Permanent" }
                 }
             }
             Write-Log -Level Debug -Message "Got $($AssignmentsEligible.count) eligible role assignments"
         }
    
+        # Keep the existing "Active" vs "Eligible" model and enrich only the
+        # active entries with PIM activation metadata.
         $AllAssignments = @($AssignmentsActive) + @($AssignmentsEligible)
 
         foreach ($assignment in $AllAssignments) {
@@ -5011,6 +5807,9 @@ function Get-AllAzureIAMAssignmentsNative {
                     Conditions = $assignment.Conditions
                     PrincipalType = $assignment.PrincipalType
                     AssignmentType = $assignment.AssignmentType
+                    ActivatedViaPIM = $assignment.ActivatedViaPIM
+                    StartDateTime = $assignment.StartDateTime
+                    EndDateTime = $assignment.EndDateTime
                 }
             }
         }
@@ -5042,6 +5841,9 @@ function Get-AzureRoleDetails {
                 Conditions = $role.Conditions
                 RoleTier = $role.RoleTier
                 AssignmentType  = $role.AssignmentType
+                ActivatedViaPIM = $role.ActivatedViaPIM
+                StartDateTime = $role.StartDateTime
+                EndDateTime = $role.EndDateTime
             }
             $azureRoleDetails += $roleInfo
         }
@@ -5474,7 +6276,9 @@ function Initialize-TenantReportTabs {
         @{ Prop = 'AppRegistrations';          Key = 'AR';         Title = 'App Registrations';         File = "AppRegistration_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'EnterpriseApps';            Key = 'EA';         Title = 'Enterprise Apps';           File = "EnterpriseApps_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'ManagedIdentities';         Key = 'MI';         Title = 'Managed Identities';        File = "ManagedIdentities_${StartTimestamp}_${tenantNameEscaped}.html" }
-        @{ Prop = 'Agents';                    Key = 'Agents';     Title = 'Agents';                    File = "Agents_${StartTimestamp}_${tenantNameEscaped}.html" }
+        @{ Prop = 'AgentIdentityBlueprints';   Key = 'AgentIdentityBlueprints'; Title = 'Agent Blueprints'; File = "AgentIdentityBlueprints_${StartTimestamp}_${tenantNameEscaped}.html" }
+        @{ Prop = 'AgentIdentityBlueprintsPrincipals'; Key = 'AgentIdentityBlueprintsPrincipals'; Title = 'Agent Blueprint Principals'; File = "AgentIdentityBlueprintsPrincipals_${StartTimestamp}_${tenantNameEscaped}.html" }
+        @{ Prop = 'AgentIdentities';           Key = 'AgentIdentities'; Title = 'Agent Identities';     File = "AgentIdentities_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'EntraRoles';                Key = 'RoleEntra';  Title = 'Role Assignments (Entra)';  File = "Role_Assignments_Entra_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'AzureRoles';                Key = 'RoleAz';     Title = 'Role Assignments (Azure)';  File = "Role_Assignments_Azure_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'PimForEntra';               Key = 'PIM';        Title = 'PIM (Entra)';                File = "PIM_${StartTimestamp}_${tenantNameEscaped}.html" }
@@ -5671,6 +6475,351 @@ function Get-APIPermissionCategory{
     }
 }
 
+# Build a reusable cache of application app roles keyed by both service principal object ID and app ID.
+function New-AppRoleReferenceCache {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)][object[]]$ServicePrincipals
+    )
+
+    $cache = @{
+        ByAppId             = @{}
+        ByResourceId        = @{}
+        ApiNamesByAppId     = @{}
+        ApiNamesByResourceId = @{}
+        AppIdsByResourceId  = @{}
+    }
+
+    foreach ($item in @($ServicePrincipals)) {
+        if ($null -eq $item) { continue }
+
+        $resourceId = if ([string]::IsNullOrWhiteSpace("$($item.Id)".Trim())) { $null } else { "$($item.Id)".Trim() }
+        $resourceAppId = if ([string]::IsNullOrWhiteSpace("$($item.AppId)".Trim())) { $null } else { "$($item.AppId)".Trim() }
+        $apiName = if ([string]::IsNullOrWhiteSpace($item.DisplayName)) { "-" } else { $item.DisplayName }
+
+        if ($resourceId) {
+            $cache.ApiNamesByResourceId[$resourceId] = $apiName
+            $cache.AppIdsByResourceId[$resourceId] = $resourceAppId
+            if (-not $cache.ByResourceId.ContainsKey($resourceId)) {
+                $cache.ByResourceId[$resourceId] = @{}
+            }
+        }
+
+        if ($resourceAppId) {
+            $cache.ApiNamesByAppId[$resourceAppId] = $apiName
+            if (-not $cache.ByAppId.ContainsKey($resourceAppId)) {
+                $cache.ByAppId[$resourceAppId] = @{}
+            }
+        }
+
+        foreach ($appRole in @($item.AppRoles | Where-Object { $_.AllowedMemberTypes -contains "Application" })) {
+            $permissionId = if ([string]::IsNullOrWhiteSpace("$($appRole.Id)".Trim())) { $null } else { "$($appRole.Id)".Trim() }
+            if (-not $permissionId) { continue }
+
+            $entry = [pscustomobject]@{
+                PermissionId                  = $permissionId
+                ApiPermission                 = if ([string]::IsNullOrWhiteSpace($appRole.Value)) { $permissionId } else { $appRole.Value }
+                ApiPermissionDisplayName      = if ([string]::IsNullOrWhiteSpace($appRole.DisplayName)) { "-" } else { $appRole.DisplayName }
+                ApiPermissionDescription      = if ([string]::IsNullOrWhiteSpace($appRole.Description)) { "-" } else { $appRole.Description }
+                ApiPermissionCategorization   = Get-APIPermissionCategory -InputPermission $permissionId -PermissionType "application"
+                ApiName                       = $apiName
+                ResourceId                    = $resourceId
+                ResourceAppId                 = $resourceAppId
+            }
+
+            if ($resourceId) {
+                $cache.ByResourceId[$resourceId][$permissionId] = $entry
+            }
+            if ($resourceAppId) {
+                $cache.ByAppId[$resourceAppId][$permissionId] = $entry
+            }
+        }
+    }
+
+    return $cache
+}
+
+# Resolve a resource service principal ID to its backing app ID from the shared cache.
+function Get-AppRoleReferenceResourceAppId {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)][hashtable]$AppRoleReferenceCache,
+        [Parameter(Mandatory = $false)][string]$ResourceId,
+        [Parameter(Mandatory = $false)][string]$ResourceAppId
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceAppId)) {
+        return $ResourceAppId
+    }
+
+    if (-not $AppRoleReferenceCache) {
+        return $null
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceId) -and
+        $AppRoleReferenceCache.ContainsKey('AppIdsByResourceId') -and
+        $AppRoleReferenceCache.AppIdsByResourceId.ContainsKey($ResourceId)) {
+        return $AppRoleReferenceCache.AppIdsByResourceId[$ResourceId]
+    }
+
+    return $null
+}
+
+# Resolve a single application permission ID from the shared cache.
+function Resolve-AppRoleReference {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)][hashtable]$AppRoleReferenceCache,
+        [Parameter(Mandatory = $true)][string]$PermissionId,
+        [Parameter(Mandatory = $false)][string]$ResourceId,
+        [Parameter(Mandatory = $false)][string]$ResourceAppId
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PermissionId)) {
+        return $null
+    }
+
+    if (-not $AppRoleReferenceCache) {
+        return $null
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceId) -and
+        $AppRoleReferenceCache.ContainsKey('ByResourceId') -and
+        $AppRoleReferenceCache.ByResourceId.ContainsKey($ResourceId) -and
+        $AppRoleReferenceCache.ByResourceId[$ResourceId].ContainsKey($PermissionId)) {
+        return $AppRoleReferenceCache.ByResourceId[$ResourceId][$PermissionId]
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceAppId) -and
+        $AppRoleReferenceCache.ContainsKey('ByAppId') -and
+        $AppRoleReferenceCache.ByAppId.ContainsKey($ResourceAppId) -and
+        $AppRoleReferenceCache.ByAppId[$ResourceAppId].ContainsKey($PermissionId)) {
+        return $AppRoleReferenceCache.ByAppId[$ResourceAppId][$PermissionId]
+    }
+
+    return $null
+}
+
+# Return the cached API display name for a resource service principal ID or app ID.
+function Get-AppRoleReferenceApiName {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)][hashtable]$AppRoleReferenceCache,
+        [Parameter(Mandatory = $false)][string]$ResourceId,
+        [Parameter(Mandatory = $false)][string]$ResourceAppId
+    )
+
+    if (-not $AppRoleReferenceCache) {
+        return "-"
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceId) -and
+        $AppRoleReferenceCache.ContainsKey('ApiNamesByResourceId') -and
+        $AppRoleReferenceCache.ApiNamesByResourceId.ContainsKey($ResourceId)) {
+        return $AppRoleReferenceCache.ApiNamesByResourceId[$ResourceId]
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($ResourceAppId) -and
+        $AppRoleReferenceCache.ContainsKey('ApiNamesByAppId') -and
+        $AppRoleReferenceCache.ApiNamesByAppId.ContainsKey($ResourceAppId)) {
+        return $AppRoleReferenceCache.ApiNamesByAppId[$ResourceAppId]
+    }
+
+    return "-"
+}
+
+# Build normalized delegated permission rows using the shared app-role reference cache.
+function Resolve-DelegatedPermissionGrantDetails {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)][hashtable]$AppRoleReferenceCache,
+        [Parameter(Mandatory = $false)][object[]]$DelegatedPermissions = @()
+    )
+
+    $rows = [System.Collections.ArrayList]::new()
+    foreach ($permission in @($DelegatedPermissions)) {
+        if ($null -eq $permission) { continue }
+
+        $resourceId = if ($permission.PSObject.Properties['ResourceId']) { [string]$permission.ResourceId } else { '' }
+        $resourceAppId = Get-AppRoleReferenceResourceAppId -AppRoleReferenceCache $AppRoleReferenceCache -ResourceId $resourceId
+        $apiName = Get-AppRoleReferenceApiName -AppRoleReferenceCache $AppRoleReferenceCache -ResourceId $resourceId -ResourceAppId $resourceAppId
+        $scopeText = if ($permission.PSObject.Properties['Scope']) { [string]$permission.Scope } else { '' }
+        $scopes = @($scopeText.Trim() -split '\s+' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        if ($scopes.Count -eq 0) { continue }
+
+        $consentType = if ($permission.PSObject.Properties['ConsentType']) { [string]$permission.ConsentType } else { '' }
+        $principal = if ($consentType -eq "Principal" -and $permission.PSObject.Properties['PrincipalId']) {
+            [string]$permission.PrincipalId
+        } else {
+            "-"
+        }
+
+        foreach ($scope in $scopes) {
+            [void]$rows.Add([pscustomobject]@{
+                ResourceId                  = $resourceId
+                ResourceAppId               = $resourceAppId
+                ConsentType                 = $consentType
+                Scope                       = $scope
+                APIName                     = $apiName
+                Principal                   = $principal
+                ApiPermissionCategorization = Get-APIPermissionCategory -InputPermission $scope -PermissionType "delegated"
+            })
+        }
+    }
+
+    return @($rows)
+}
+
+# Build the normalized permission object used by report modules from a cached app-role lookup.
+function Resolve-AppRoleAssignmentRecord {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)][hashtable]$AppRoleReferenceCache,
+        [Parameter(Mandatory = $true)][string]$PermissionId,
+        [Parameter(Mandatory = $false)][string]$ResourceId,
+        [Parameter(Mandatory = $false)][string]$ResourceAppId,
+        [Parameter(Mandatory = $false)][string]$ApiNameOverride
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PermissionId)) {
+        return $null
+    }
+
+    $resolvedResourceAppId = Get-AppRoleReferenceResourceAppId -AppRoleReferenceCache $AppRoleReferenceCache -ResourceId $ResourceId -ResourceAppId $ResourceAppId
+    $resolved = Resolve-AppRoleReference -AppRoleReferenceCache $AppRoleReferenceCache -PermissionId $PermissionId -ResourceId $ResourceId -ResourceAppId $resolvedResourceAppId
+    $apiName =
+        if (-not [string]::IsNullOrWhiteSpace($ApiNameOverride)) {
+            $ApiNameOverride
+        } elseif ($resolved -and -not [string]::IsNullOrWhiteSpace($resolved.ApiName)) {
+            $resolved.ApiName
+        } else {
+            Get-AppRoleReferenceApiName -AppRoleReferenceCache $AppRoleReferenceCache -ResourceId $ResourceId -ResourceAppId $resolvedResourceAppId
+        }
+
+    [pscustomobject]@{
+        Type                         = "Permission"
+        PermissionId                 = $PermissionId
+        ResourceId                   = $ResourceId
+        ResourceAppId                = $resolvedResourceAppId
+        ApiPermission                = if ($resolved) { $resolved.ApiPermission } else { $PermissionId }
+        ApiName                      = if ([string]::IsNullOrWhiteSpace($apiName)) { "-" } else { $apiName }
+        ApiPermissionDisplayname     = if ($resolved) { $resolved.ApiPermissionDisplayName } else { "-" }
+        ApiPermissionDescription     = if ($resolved) { $resolved.ApiPermissionDescription } else { "-" }
+        ApiPermissionCategorization  = if ($resolved) { $resolved.ApiPermissionCategorization } else { Get-APIPermissionCategory -InputPermission $PermissionId -PermissionType "application" }
+    }
+}
+
+# Summarize API-permission counts and impact using the shared scoring model.
+function Get-ApiPermissionImpactSummary {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $false)][object[]]$ApplicationPermissions = @(),
+        [Parameter(Mandatory = $false)][object[]]$DelegatedPermissions = @(),
+        [Parameter(Mandatory = $false)][switch]$DeduplicateApplication,
+        [Parameter(Mandatory = $false)][switch]$DeduplicateDelegated
+    )
+
+    $scoreMap = @{
+        Dangerous     = 800
+        High          = 400
+        Medium        = 100
+        Low           = 50
+        Uncategorized = 20
+    }
+    $delegatedScoreMap = @{
+        Dangerous     = 200
+        High          = 100
+        Medium        = 60
+        Low           = 20
+        Uncategorized = 20
+    }
+    $categories = @('Dangerous', 'High', 'Medium', 'Low', 'Uncategorized')
+
+    $dedupByKey = {
+        param(
+            [object[]]$Rows,
+            [scriptblock]$KeySelector
+        )
+
+        $result = [System.Collections.ArrayList]::new()
+        $seen = @{}
+        foreach ($row in @($Rows)) {
+            if ($null -eq $row) { continue }
+            $key = & $KeySelector $row
+            if ([string]::IsNullOrWhiteSpace([string]$key)) {
+                $key = [guid]::NewGuid().Guid
+            }
+            if ($seen.ContainsKey($key)) {
+                continue
+            }
+            $seen[$key] = $true
+            [void]$result.Add($row)
+        }
+        return @($result)
+    }
+
+    $applicationRows = @($ApplicationPermissions)
+    if ($DeduplicateApplication) {
+        $applicationRows = & $dedupByKey $applicationRows {
+            param($row)
+            $resourceAppId = if ($row.PSObject.Properties['ResourceAppId']) { [string]$row.ResourceAppId } else { '' }
+            $permissionId = if ($row.PSObject.Properties['PermissionId']) { [string]$row.PermissionId } else { [string]$row.ApiPermission }
+            "APP|$resourceAppId|$permissionId"
+        }
+    }
+
+    $delegatedRows = @($DelegatedPermissions)
+    if ($DeduplicateDelegated) {
+        $delegatedRows = & $dedupByKey $delegatedRows {
+            param($row)
+            $resourceAppId = if ($row.PSObject.Properties['ResourceAppId']) { [string]$row.ResourceAppId } else { '' }
+            $scope = if ($row.PSObject.Properties['Scope']) { [string]$row.Scope } else { [string]$row.Permission }
+            "DEL|$resourceAppId|$scope"
+        }
+    }
+
+    $applicationCounts = @{}
+    $delegatedCounts = @{}
+    foreach ($category in $categories) {
+        $applicationCounts[$category] = 0
+        $delegatedCounts[$category] = 0
+    }
+
+    $impact = 0
+    foreach ($row in $applicationRows) {
+        $category = if ($row.PSObject.Properties['ApiPermissionCategorization']) { [string]$row.ApiPermissionCategorization } else { 'Uncategorized' }
+        if (-not $applicationCounts.ContainsKey($category)) {
+            $category = 'Uncategorized'
+        }
+        $applicationCounts[$category]++
+        $impact += $scoreMap[$category]
+    }
+
+    foreach ($row in $delegatedRows) {
+        $category = if ($row.PSObject.Properties['ApiPermissionCategorization']) { [string]$row.ApiPermissionCategorization } else { 'Uncategorized' }
+        if (-not $delegatedCounts.ContainsKey($category)) {
+            $category = 'Uncategorized'
+        }
+        $delegatedCounts[$category]++
+    }
+
+    foreach ($category in $categories) {
+        if ($delegatedCounts[$category] -gt 0) {
+            $impact += $delegatedScoreMap[$category]
+        }
+    }
+
+    [pscustomobject]@{
+        ApplicationPermissions = @($applicationRows)
+        DelegatedPermissions   = @($delegatedRows)
+        ApplicationCounts      = $applicationCounts
+        DelegatedCounts        = $delegatedCounts
+        ApplicationCount       = @($applicationRows).Count
+        DelegatedCount         = @($delegatedRows).Count
+        Impact                 = $impact
+    }
+}
+
 #Function to check if objects exist to determine if the reports wil lbe generated.
 function Get-TenantReportAvailability {
     $requests = New-Object 'System.Collections.Generic.List[object]'
@@ -5679,8 +6828,10 @@ function Get-TenantReportAvailability {
         @{ Name = 'Groups';           Url = '/groups' }
         @{ Name = 'AppRegistrations'; Url = '/applications' }
         @{ Name = 'ManagedIdentities'; Url = '/servicePrincipals'; Query = @{ '$filter' = "servicePrincipalType eq 'ManagedIdentity'" } }
+        @{ Name = 'AgentIdentities'; Url = '/servicePrincipals/Microsoft.Graph.AgentIdentity' }
+        @{ Name = 'AgentIdentityBlueprintsPrincipals'; Url = '/servicePrincipals/graph.agentIdentityBlueprintPrincipal' }
+        @{ Name = 'AgentIdentityBlueprints'; Url = '/applications/microsoft.graph.agentIdentityBlueprint' }
         #@{ Name = 'EnterpriseApps';   Url = '/servicePrincipals'; Query = @{ '$filter' = "servicePrincipalType eq 'Application'" } }
-        #@{ Name = 'Agents';           Url = '/servicePrincipals'; Query = @{ '$filter' = "servicePrincipalType eq 'ServiceIdentity'" } }
     )
 
     foreach ($spec in $requestSpecs) {
@@ -5858,13 +7009,16 @@ function start-InitTasks {
         Users                  = @{ Count = 0; Guests = 0; Inactive = 0; Enabled=0; OnPrem=0; MfaCapable=0; SignInActivity = @{ '0-1 month' = 0; '1-2 months' = 0; '2-3 months' = 0; '3-4 months' = 0; '4-5 months' = 0; '5-6 months' = 0; '6+ months' = 0; 'Never' = 0 }}
         Groups                 = @{ Count = 0; M365 = 0; PublicM365 = 0; PimOnboarded = 0; OnPrem = 0}
         AppRegistrations       = @{ Count = 0; AppLock = 0; Credentials = @{ 'AppsSecrets' = 0; 'AppsCerts' = 0; 'AppsFederatedCreds' = 0; 'AppsNoCreds' = 0}; Audience = @{ 'SingleTenant' = 0; 'MultiTenant' = 0; 'MultiTenantPersonal' = 0} }
-        EnterpriseApps         = @{ Count = 0; Foreign = 0; IncludeMsApps = $false; Credentials = 0; ApiCategorization = @{ 'Dangerous' = 0; 'High' = 0; 'Medium' = 0; 'Low' = 0; 'Misc' = 0}}
+        EnterpriseApps         = @{ Count = 0; Foreign = 0; IncludeMsApps = $false; Credentials = 0; ApiCategorization = @{ 'Dangerous' = 0; 'High' = 0; 'Medium' = 0; 'Low' = 0; 'Misc' = 0}; SignInActivity = @{ '0-1 month' = 0; '1-2 months' = 0; '2-3 months' = 0; '3-4 months' = 0; '4-5 months' = 0; '5-6 months' = 0; '6+ months' = 0; 'Never' = 0 }}
         ManagedIdentities      = @{ Count = 0; IsExplicit = 0; ApiCategorization = @{ 'Dangerous' = 0; 'High' = 0; 'Medium' = 0; 'Low' = 0; 'Misc' = 0} }
+        AgentIdentities        = @{ Count = 0; Foreign = 0; Inactive = 0; TotalAgentUsers = 0; ApiCategorization = @{ 'Dangerous' = 0; 'High' = 0; 'Medium' = 0; 'Low' = 0; 'Misc' = 0 } }
+        AgentIdentityBlueprintsPrincipals = @{ Count = 0; Foreign = 0 }
+        AgentIdentityBlueprints = @{ Count = 0; Credentials = @{ 'Secrets' = 0; 'Certificates' = 0; 'Federated Credentials' = 0; 'None' = 0 } }
         AdministrativeUnits    = @{ Count = 0 }
         ConditionalAccess      = @{ Count = 0; Enabled = 0 }
         SecurityFindings       = @{ Vulnerable = 0; NotVulnerable = 0; Skipped = 0; Total = 0 }
-        EntraRoleAssignments   = @{ Count = 0; Eligible = 0; BuiltIn = 0; PrincipalType = @{ 'User' = 0; 'Group' = 0; 'App' = 0; 'MI' = 0; 'Unknown' = 0}; Tiers = @{ 'Tier-0' = 0; 'Tier-1' = 0; 'Tier-2' = 0; 'Uncategorized' = 0} }
-        AzureRoleAssignments   = @{ Count = 0; Eligible = 0; BuiltIn = 0; PrincipalType = @{ 'User' = 0; 'Group' = 0; 'SP' = 0; 'Unknown' = 0}; Tiers = @{ 'Tier-0' = 0; 'Tier-1' = 0; 'Tier-2' = 0; 'Tier-3' = 0; 'Uncategorized' = 0} }
+        EntraRoleAssignments   = @{ Count = 0; Eligible = 0; BuiltIn = 0; PrincipalType = @{ 'User' = 0; 'Group' = 0; 'App' = 0; 'MI' = 0; 'AgentIdentity' = 0; 'BlueprintPrincipal' = 0; 'Unknown' = 0}; Tiers = @{ 'Tier-0' = 0; 'Tier-1' = 0; 'Tier-2' = 0; 'Uncategorized' = 0} }
+        AzureRoleAssignments   = @{ Count = 0; Eligible = 0; BuiltIn = 0; PrincipalType = @{ 'User' = 0; 'Group' = 0; 'SP' = 0; 'MI' = 0; 'AgentIdentity' = 0; 'BlueprintPrincipal' = 0; 'Unknown' = 0}; Tiers = @{ 'Tier-0' = 0; 'Tier-1' = 0; 'Tier-2' = 0; 'Tier-3' = 0; 'Uncategorized' = 0} }
         PimSettings            = @{ Count = 0}
         Domains                = @{ Count = 0; Federated = 0; Verified = 0; Default = 0; AdminManaged = 0 }
         Errors                 = @()
@@ -6442,6 +7596,7 @@ function start-CleanUp {
     remove-variable -Scope Global GLOBALMsTenantIds -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALPermissionForCaps -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALPimForGroupsChecked -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALUserSignInActivityAvailable -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAzurePsChecks -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAzureIamWarningText -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAuthParameters -ErrorAction SilentlyContinue
@@ -6532,4 +7687,4 @@ function Show-EntraFalconBanner {
     Write-Host ""
 }
 
-Export-ModuleMember -Function Show-EntraFalconBanner,AuthenticationMSGraph,Get-TenantReportAvailability,Get-TenantDomains,Initialize-TenantReportTabs,Set-GlobalReportManifest,Get-EffectiveEntraLicense,Get-Devices,Get-UsersBasic,start-CleanUp,Format-ReportSection,Get-OrgInfo,Get-LogLevel, Write-Log,Invoke-MsGraphRefreshPIM,Write-LogVerbose,Invoke-AzureRoleProcessing,Get-RegisterAuthMethodsUsers,Invoke-EntraRoleProcessing,Get-EntraPIMRoleAssignments,AuthCheckMSGraph,RefreshAuthenticationMsGraph,EnsureAuthSecurityFindingsMsGraph,RefreshAuthenticationSecurityFindingsMsGraph,Get-PimforGroupsAssignments,Invoke-CheckTokenExpiration,Invoke-MsGraphAuthPIM,EnsureAuthMsGraph,Get-AzureRoleDetails,Get-AdministrativeUnitsWithMembers,Get-ConditionalAccessPolicies,Get-EntraRoleAssignments,Get-APIPermissionCategory,Get-ObjectInfo,EnsureAuthAzurePsNative,checkSubscriptionNative,Get-AllAzureIAMAssignmentsNative,Get-PIMForGroupsAssignmentsDetails,Show-EnumerationSummary,start-InitTasks,Get-HighestTierLabel,Merge-HigherTierLabel,Get-GroupDetails,Get-GroupActiveRoleMetrics,Get-EntraFalconHostOs,Test-NonWindowsAuthFlowCompatibility
+Export-ModuleMember -Function Show-EntraFalconBanner,AuthenticationMSGraph,Get-TenantReportAvailability,Get-TenantDomains,Initialize-TenantReportTabs,Set-GlobalReportManifest,Get-EffectiveEntraLicense,Get-Devices,Get-UsersBasic,Get-AgentObjectBasics,Get-ServicePrincipalSignInActivityLookup,Resolve-DirectoryObjectReference,start-CleanUp,Format-ReportSection,Get-OrgInfo,Get-LogLevel, Write-Log,Invoke-MsGraphRefreshPIM,Write-LogVerbose,Invoke-AzureRoleProcessing,Get-RegisterAuthMethodsUsers,Invoke-EntraRoleProcessing,Get-EntraPIMRoleAssignments,AuthCheckMSGraph,RefreshAuthenticationMsGraph,EnsureAuthSecurityFindingsMsGraph,RefreshAuthenticationSecurityFindingsMsGraph,Get-PimforGroupsAssignments,Invoke-CheckTokenExpiration,Invoke-MsGraphAuthPIM,EnsureAuthMsGraph,Get-AzureRoleDetails,Get-AdministrativeUnitsWithMembers,Get-ConditionalAccessPolicies,Get-EntraRoleAssignments,Get-APIPermissionCategory,New-AppRoleReferenceCache,Resolve-AppRoleReference,Get-AppRoleReferenceApiName,Get-AppRoleReferenceResourceAppId,Resolve-DelegatedPermissionGrantDetails,Resolve-AppRoleAssignmentRecord,Get-ApiPermissionImpactSummary,Get-ObjectInfo,EnsureAuthAzurePsNative,checkSubscriptionNative,Get-AllAzureIAMAssignmentsNative,Get-PIMForGroupsAssignmentsDetails,Show-EnumerationSummary,start-InitTasks,Get-HighestTierLabel,Merge-HigherTierLabel,Get-GroupDetails,Get-GroupActiveRoleMetrics,Get-EntraFalconHostOs,Test-NonWindowsAuthFlowCompatibility

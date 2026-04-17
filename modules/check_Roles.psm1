@@ -19,6 +19,8 @@ function Invoke-CheckRoles {
         [Parameter(Mandatory=$true)][hashtable]$ManagedIdentities,
         [Parameter(Mandatory=$true)][hashtable]$AppRegistrations,
         [Parameter(Mandatory=$true)][hashtable]$Users,
+        [Parameter(Mandatory=$false)][hashtable]$AgentIdentities = @{},
+        [Parameter(Mandatory=$false)][hashtable]$AgentIdentityBlueprintsPrincipals = @{},
         [Parameter(Mandatory=$false)][switch]$Csv = $false
     )
 
@@ -88,6 +90,32 @@ function Invoke-CheckRoles {
                 $ObjectDetailsCache[$cacheKey] = $object
                 Return $object
             } 
+        }
+
+        if ($normalizedType -eq "unknown" -or $normalizedType -eq "serviceprincipal") {
+            $MatchingBlueprintPrincipal = $AgentIdentityBlueprintsPrincipals[$ObjectID]
+            if ($MatchingBlueprintPrincipal) {
+                $object = [PSCustomObject]@{
+                    DisplayName     = $MatchingBlueprintPrincipal.DisplayName
+                    DisplayNameLink = "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingBlueprintPrincipal.DisplayName)</a>"
+                    Type            = "Agent Identity Blueprint Principal"
+                }
+                $ObjectDetailsCache[$cacheKey] = $object
+                Return $object
+            }
+        }
+
+        if ($normalizedType -eq "unknown" -or $normalizedType -eq "serviceprincipal") {
+            $MatchingAgentIdentity = $AgentIdentities[$ObjectID]
+            if ($MatchingAgentIdentity) {
+                $object = [PSCustomObject]@{
+                    DisplayName     = $MatchingAgentIdentity.DisplayName
+                    DisplayNameLink = "<a href=AgentIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingAgentIdentity.DisplayName)</a>"
+                    Type            = "Agent Identity"
+                }
+                $ObjectDetailsCache[$cacheKey] = $object
+                Return $object
+            }
         }
 
         if ($normalizedType -eq "unknown" -or $normalizedType -eq "serviceprincipal") {
@@ -356,7 +384,7 @@ function Invoke-CheckRoles {
             "PrincipalType" = $($PrincipalDetails.Type)
             "RoleTier" = $RoleTier
             "AssignmentType" = $($item.AssignmentType)
-            "ActivatedViaPIM" = if ($item.PSObject.Properties.Match('ActivatedViaPIM').Count -gt 0) { $item.ActivatedViaPIM } elseif ($item.PSObject.Properties.Match('Activated').Count -gt 0) { $item.Activated } else { $false }
+            "ActivatedViaPIM" = $($item.ActivatedViaPIM)
             "Start" = Format-RoleAssignmentDateTime -Value $item.StartDateTime
             "Expires" = Format-RoleAssignmentDateTime -Value $item.EndDateTime
             "DirectoryScopeId" = $($item.DirectoryScopeId)
@@ -433,6 +461,7 @@ function Invoke-CheckRoles {
                 $PrincipalDisplayNameLink = $PrincipalDetails.DisplayNameLink
             }
 
+            # Flatten one principal -> many Azure assignments into the same row
             foreach ($Assignment in $Assignments) {
                 switch ($Assignment.RoleTier) {
                     0 { $RoleTier = "Tier-0"; break }
@@ -445,13 +474,16 @@ function Invoke-CheckRoles {
                     PrincipalId               = $PrincipalId
                     PrincipalDisplayName      = $PrincipalDisplayName
                     PrincipalDisplayNameLink  = $PrincipalDisplayNameLink
-                    PrincipalType             = $Assignment.PrincipalType
+                    PrincipalType             = if ($PrincipalDetails -and $PrincipalDetails.Type -ne "Unknown Object") { $PrincipalDetails.Type } else { $Assignment.PrincipalType }
                     RoleType                  = $Assignment.RoleType
                     Conditions                = $Assignment.Conditions
                     Role                      = $Assignment.RoleDefinitionName
                     Scope                     = $Assignment.Scope
                     RoleTier                  = $RoleTier
                     AssignmentType            = $Assignment.AssignmentType
+                    ActivatedViaPIM           = $Assignment.ActivatedViaPIM
+                    Start                     = Format-RoleAssignmentDateTime -Value $Assignment.StartDateTime
+                    Expires                   = Format-RoleAssignmentDateTime -Value $Assignment.EndDateTime
                 })
             }
         } else {
@@ -476,6 +508,9 @@ function Invoke-CheckRoles {
                     Scope                     = $Assignment.Scope
                     RoleTier                  = $RoleTier
                     AssignmentType            = $Assignment.AssignmentType
+                    ActivatedViaPIM           = $Assignment.ActivatedViaPIM
+                    Start                     = Format-RoleAssignmentDateTime -Value $Assignment.StartDateTime
+                    Expires                   = Format-RoleAssignmentDateTime -Value $Assignment.EndDateTime
                 })
             }
         }
@@ -523,7 +558,7 @@ function Invoke-CheckRoles {
     $mainEntraTableHTML = $GLOBALMainTableDetailsHEAD + "`n" + $mainEntraTableJson + "`n" + '</script>'
 
 
-    $mainAzureTable = $SortedAzureRoles | select-object -Property Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,PrincipalType,@{Name = "Principal"; Expression = { $_.PrincipalDisplayNameLink}}
+    $mainAzureTable = $SortedAzureRoles | select-object -Property Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalType,@{Name = "Principal"; Expression = { $_.PrincipalDisplayNameLink}}
     $mainAzureTableJson  = $mainAzureTable | ConvertTo-Json -Depth 5 -Compress
 
     $mainAzureTableHTML = $GLOBALMainTableDetailsHEAD + "`n" + $mainAzureTableJson + "`n" + '</script>'
@@ -582,6 +617,8 @@ $headerHtml = @"
     $AssignmentPrincipalTypGroups = 0
     $AssignmentPrincipalTypApps = 0
     $AssignmentPrincipalTypMIs = 0
+    $AssignmentPrincipalTypAgentIdentities = 0
+    $AssignmentPrincipalTypBlueprintPrincipals = 0
     $AssignmentPrincipalTypUnknown = 0
 
     foreach ($assignment in $SortedEntraRoles) {
@@ -604,6 +641,8 @@ $headerHtml = @"
             "User" {$AssignmentPrincipalTypUsers++; break}
             "Group" {$AssignmentPrincipalTypGroups++; break}
             "Enterprise Application" {$AssignmentPrincipalTypApps++; break}
+            "Agent Identity" {$AssignmentPrincipalTypAgentIdentities++; break}
+            "Agent Identity Blueprint Principal" {$AssignmentPrincipalTypBlueprintPrincipals++; break}
             "Managed Identity" {$AssignmentPrincipalTypMIs++; break}
             "Unknown Object" {$AssignmentPrincipalTypUnknown++}
         }
@@ -618,6 +657,8 @@ $headerHtml = @"
     $GlobalAuditSummary.EntraRoleAssignments.PrincipalType.Group = $AssignmentPrincipalTypGroups
     $GlobalAuditSummary.EntraRoleAssignments.PrincipalType.App = $AssignmentPrincipalTypApps
     $GlobalAuditSummary.EntraRoleAssignments.PrincipalType.MI = $AssignmentPrincipalTypMIs
+    $GlobalAuditSummary.EntraRoleAssignments.PrincipalType.AgentIdentity = $AssignmentPrincipalTypAgentIdentities
+    $GlobalAuditSummary.EntraRoleAssignments.PrincipalType.BlueprintPrincipal = $AssignmentPrincipalTypBlueprintPrincipals
     $GlobalAuditSummary.EntraRoleAssignments.PrincipalType.Unknown = $AssignmentPrincipalTypUnknown
 
     $GlobalAuditSummary.EntraRoleAssignments.Tiers."Tier-0" = $Tier0Count
@@ -632,9 +673,9 @@ $headerHtml = @"
         $Report = ConvertTo-HTML -Body "$headerHtml $mainAzureTableHTML" -Title "$Title Enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript
         $Report | Out-File "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
         $headerTXTAzureRoles | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-        $SortedAzureRoles | format-table Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,PrincipalDisplayName,PrincipalType | Out-File -Width 512 "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+        $SortedAzureRoles | format-table Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType | Out-File -Width 512 "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
         if ($Csv) {
-            $SortedAzureRoles | select-object Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,PrincipalDisplayName,PrincipalType | Export-Csv -Path "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+            $SortedAzureRoles | select-object Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType | Export-Csv -Path "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
         }
         write-host "[+] Details of $($SortedAzureRoles.count) Azure role assignments stored in output files ($OutputFormats): $outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName)"
         
@@ -649,6 +690,9 @@ $headerHtml = @"
         $AssignmentPrincipalTypUsers = 0
         $AssignmentPrincipalTypGroups = 0
         $AssignmentPrincipalTypSPs = 0
+        $AssignmentPrincipalTypMIs = 0
+        $AssignmentPrincipalTypAgentIdentities = 0
+        $AssignmentPrincipalTypBlueprintPrincipals = 0
         $AssignmentPrincipalTypUnknown = 0
 
         foreach ($assignment in $SortedAzureRoles) {
@@ -671,6 +715,10 @@ $headerHtml = @"
                 "User" {$AssignmentPrincipalTypUsers++; break}
                 "Group" {$AssignmentPrincipalTypGroups++; break}
                 "ServicePrincipal" {$AssignmentPrincipalTypSPs++; break}
+                "Enterprise Application" {$AssignmentPrincipalTypSPs++; break}
+                "Agent Identity" {$AssignmentPrincipalTypAgentIdentities++; break}
+                "Agent Identity Blueprint Principal" {$AssignmentPrincipalTypBlueprintPrincipals++; break}
+                "Managed Identity" {$AssignmentPrincipalTypMIs++; break}
                 "Unknown Object" {$AssignmentPrincipalTypUnknown++}
             }
         }
@@ -682,6 +730,9 @@ $headerHtml = @"
         $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.User = $AssignmentPrincipalTypUsers
         $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.Group = $AssignmentPrincipalTypGroups
         $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.SP = $AssignmentPrincipalTypSPs
+        $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.MI = $AssignmentPrincipalTypMIs
+        $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.AgentIdentity = $AssignmentPrincipalTypAgentIdentities
+        $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.BlueprintPrincipal = $AssignmentPrincipalTypBlueprintPrincipals
         $GlobalAuditSummary.AzureRoleAssignments.PrincipalType.Unknown = $AssignmentPrincipalTypUnknown
         $GlobalAuditSummary.AzureRoleAssignments.Tiers."Tier-0" = $AzureTier0Count
         $GlobalAuditSummary.AzureRoleAssignments.Tiers."Tier-1" = $AzureTier1Count

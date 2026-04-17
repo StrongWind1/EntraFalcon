@@ -395,11 +395,14 @@ return @"
             "App Registrations"           = $($GlobalAuditSummary.AppRegistrations.Count)
             "Enterprise Applications"     = $($GlobalAuditSummary.EnterpriseApps.Count)
             "Managed Identities"          = $($GlobalAuditSummary.ManagedIdentities.Count)
+            "Agent Identities"            = $($GlobalAuditSummary.AgentIdentities.Count)
+            "Agent Blueprint Principals"  = $($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Count)
+            "Agent Blueprints"            = $($GlobalAuditSummary.AgentIdentityBlueprints.Count)
             "Administrative Units"        = $($GlobalAuditSummary.AdministrativeUnits.Count)
             "Conditional Access Policies" = $($GlobalAuditSummary.ConditionalAccess.Count)
             "Domains"                     = @($TenantDomains).Count
             "PIM Settings"                = $($GlobalAuditSummary.PimSettings.Count)
-            "Findings"                    = $securityFindingsSummary.Vulnerable
+            "Security Findings"           = $securityFindingsSummary.Vulnerable
         }
     $mainTableJson  = $mainTable | ConvertTo-Json -Depth 10 -Compress
 
@@ -408,9 +411,10 @@ return @"
     $Chartsection += New-ChartSection -Title "Users" -Prefix "user" -ChartCount 6
     # Only include PIM chart if it's checked
     if ($GLOBALPimForGroupsChecked) { $ChartsectionGroups += New-ChartSection -Title "Groups" -Prefix "group" -ChartCount 4} else {$ChartsectionGroups += New-ChartSection -Title "Groups" -Prefix "group" -ChartCount 3}
-    $ChartsectionEnterpriseApps += New-ChartSection -Title "Enterprise Applications" -Prefix "enterpriseapps" -ChartCount 3
+    $ChartsectionEnterpriseApps += New-ChartSection -Title "Enterprise Applications" -Prefix "enterpriseapps" -ChartCount 4
     $ChartsectionAppRegistrations += New-ChartSection -Title "App Registrations" -Prefix "appregistrations" -ChartCount 3
     $ChartsectionManagedIdentities += New-ChartSection -Title "Managed Identities" -Prefix "managedidentities" -ChartCount 2
+    $ChartsectionAgentIdentities += New-ChartSection -Title "Agent Identities" -Prefix "agentidentities" -ChartCount 6
     $ChartsectionEntraRoles += New-ChartSection -Title "Entra ID Role Assignments" -Prefix "entraroles" -ChartCount 4
     $ChartsectionAzureRoles += New-ChartSection -Title "Azure Role Assignments" -Prefix "azureroles" -ChartCount 4
 
@@ -427,6 +431,9 @@ return @"
     }
     if ($($GlobalAuditSummary.ManagedIdentities.Count) -ge 1) {
         $Chartsection += $ChartsectionManagedIdentities
+    }
+    if ($($GlobalAuditSummary.AgentIdentities.Count + $GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Count + $GlobalAuditSummary.AgentIdentityBlueprints.Count) -ge 1) {
+        $Chartsection += $ChartsectionAgentIdentities
     }
     if ($($GlobalAuditSummary.EntraRoleAssignments.Count) -ge 1) {
         $Chartsection += $ChartsectionEntraRoles
@@ -515,12 +522,22 @@ document.addEventListener('DOMContentLoaded', function () {
             credentials: $($GlobalAuditSummary.EnterpriseApps.Credentials),
             nocredentials: $($($GlobalAuditSummary.EnterpriseApps.Count) - $($GlobalAuditSummary.EnterpriseApps.Credentials))
         },
-            enterpriseapps_apicategorization: {
+        enterpriseapps_apicategorization: {
             'Dangerous': $($GlobalAuditSummary.EnterpriseApps.ApiCategorization.Dangerous),
             'High': $($GlobalAuditSummary.EnterpriseApps.ApiCategorization.High),
             'Medium': $($GlobalAuditSummary.EnterpriseApps.ApiCategorization.Medium),
             'Low': $($GlobalAuditSummary.EnterpriseApps.ApiCategorization.Low),
             'Uncategorized': $($GlobalAuditSummary.EnterpriseApps.ApiCategorization.Misc)
+        },
+        enterpriseapps_lastsignin: {
+            '0-1 month': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."0-1 month"),
+            '1-2 months': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."1-2 months"),
+            '2-3 months': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."2-3 months"),
+            '3-4 months': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."3-4 months"),
+            '4-5 months': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."4-5 months"),
+            '5-6 months': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."5-6 months"),
+            '6+ months': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."6+ months"),
+            'Never': $($GlobalAuditSummary.EnterpriseApps.SignInActivity."Never")
         },
 
         // ============ App Registrations ============
@@ -555,6 +572,41 @@ document.addEventListener('DOMContentLoaded', function () {
             'Uncategorized': $($GlobalAuditSummary.ManagedIdentities.ApiCategorization.Misc)
         },
 
+        // ============ Agent Identities ============
+        agentidentities_overview: {
+            'Agent Blueprints': $($GlobalAuditSummary.AgentIdentityBlueprints.Count),
+            'Agent Blueprint Principals': $($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Count),
+            'Agent Identities': $($GlobalAuditSummary.AgentIdentities.Count),
+            'Agent Users': $($GlobalAuditSummary.AgentIdentities.TotalAgentUsers)
+        },
+        agentidentities_general: {
+            internal: $($($GlobalAuditSummary.AgentIdentities.Count) - $($GlobalAuditSummary.AgentIdentities.Foreign)),
+            foreign: $($GlobalAuditSummary.AgentIdentities.Foreign),
+            total: $($GlobalAuditSummary.AgentIdentities.Count)
+        },
+        agentidentities_inactive: {
+            active: $($($GlobalAuditSummary.AgentIdentities.Count) - $($GlobalAuditSummary.AgentIdentities.Inactive)),
+            inactive: $($GlobalAuditSummary.AgentIdentities.Inactive)
+        },
+        agentidentities_apicategorization: {
+            'Dangerous': $($GlobalAuditSummary.AgentIdentities.ApiCategorization.Dangerous),
+            'High': $($GlobalAuditSummary.AgentIdentities.ApiCategorization.High),
+            'Medium': $($GlobalAuditSummary.AgentIdentities.ApiCategorization.Medium),
+            'Low': $($GlobalAuditSummary.AgentIdentities.ApiCategorization.Low),
+            'Uncategorized': $($GlobalAuditSummary.AgentIdentities.ApiCategorization.Misc)
+        },
+        agentblueprintprincipals_general: {
+            internal: $($($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Count) - $($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Foreign)),
+            foreign: $($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Foreign),
+            total: $($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Count)
+        },
+        agentblueprints_credentials: {
+            'Secrets': $($GlobalAuditSummary.AgentIdentityBlueprints.Credentials.'Secrets'),
+            'Certificates': $($GlobalAuditSummary.AgentIdentityBlueprints.Credentials.'Certificates'),
+            'Federated Credentials': $($GlobalAuditSummary.AgentIdentityBlueprints.Credentials.'Federated Credentials'),
+            'None': $($GlobalAuditSummary.AgentIdentityBlueprints.Credentials.'None')
+        },
+
         // ============ Entra Roles ============
         entraroles_general: {
             active: $($($GlobalAuditSummary.EntraRoleAssignments.Count) - $($GlobalAuditSummary.EntraRoleAssignments.Eligible)),
@@ -574,8 +626,10 @@ document.addEventListener('DOMContentLoaded', function () {
         entraroles_principaltypes: {
             'User': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.User),
             'Group': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.Group),
-            'App': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.App),
+            'Enterprise App': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.App),
             'Managed Identity': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.MI),
+            'Agent Identity': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.AgentIdentity),
+            'Blueprint Principal': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.BlueprintPrincipal),
             'Unknown': $($GlobalAuditSummary.EntraRoleAssignments.PrincipalType.Unknown)
         },
 
@@ -599,7 +653,10 @@ document.addEventListener('DOMContentLoaded', function () {
         azureroles_principaltypes: {
             'User': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.User),
             'Group': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.Group),
-            'ServicePrincipal': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.SP),
+            'Enterprise App': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.SP),
+            'Managed Identity': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.MI),
+            'Agent Identity': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.AgentIdentity),
+            'Blueprint Principal': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.BlueprintPrincipal),
             'Unknown': $($GlobalAuditSummary.AzureRoleAssignments.PrincipalType.Unknown)
         }        
     };
@@ -765,6 +822,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 }],
             };
         }
+        if (datasetKey === 'enterpriseapps_lastsignin') {
+            const entries = Object.entries(dataSources.enterpriseapps_lastsignin);
+            return {
+                labels: entries.map(e => e[0]),
+                datasets: [{
+                    label: 'Apps',
+                    data: entries.map(e => e[1]),
+                    backgroundColor: chartColorPalette
+                }],
+            };
+        }
 
         // ============ App Registrations ============
         if (datasetKey === 'appregistrations_general') {
@@ -819,6 +887,68 @@ document.addEventListener('DOMContentLoaded', function () {
             };
         }
 
+        // ============ Agent Identities ============
+        if (datasetKey === 'agentidentities_overview') {
+            const entries = Object.entries(dataSources.agentidentities_overview);
+            return {
+                labels: entries.map(e => e[0]),
+                datasets: [{
+                    label: 'Count',
+                    data: entries.map(e => e[1]),
+                    backgroundColor: chartColorPalette
+                }]
+            };
+        }
+        if (datasetKey === 'agentidentities_general') {
+            return {
+                labels: ['Internal Agent Identities', 'Foreign Agent Identities'],
+                datasets: [{
+                    data: [dataSources.agentidentities_general.internal, dataSources.agentidentities_general.foreign],
+                    backgroundColor: chartColorPalette
+                }]
+            };
+        }
+        if (datasetKey === 'agentidentities_inactive') {
+            return {
+                labels: ['Active', 'Inactive'],
+                datasets: [{
+                    data: [dataSources.agentidentities_inactive.active, dataSources.agentidentities_inactive.inactive],
+                    backgroundColor: chartColorPalette
+                }]
+            };
+        }
+        if (datasetKey === 'agentidentities_apicategorization') {
+            const entries = Object.entries(dataSources.agentidentities_apicategorization);
+            return {
+                labels: entries.map(e => e[0]),
+                datasets: [{
+                    label: 'Agent Identities',
+                    data: entries.map(e => e[1]),
+                    backgroundColor: chartColorPalette
+                }],
+            };
+        }
+        if (datasetKey === 'agentblueprintprincipals_general') {
+            return {
+                labels: ['Internal Blueprint Principals', 'Foreign Blueprint Principals'],
+                datasets: [{
+                    data: [dataSources.agentblueprintprincipals_general.internal, dataSources.agentblueprintprincipals_general.foreign],
+                    backgroundColor: chartColorPalette
+                }]
+            };
+        }
+        if (datasetKey === 'agentblueprints_credentials') {
+            const entries = Object.entries(dataSources.agentblueprints_credentials);
+            return {
+                labels: entries.map(e => e[0]),
+                datasets: [{
+                    label: 'Agent Blueprints',
+                    data: entries.map(e => e[1]),
+                    backgroundColor: chartColorPalette
+                }],
+            };
+        }
+
         // ============ Entra Roles ============
         if (datasetKey === 'entraroles_general') {
             return {
@@ -850,7 +980,7 @@ document.addEventListener('DOMContentLoaded', function () {
             };
         }
         if (datasetKey === 'entraroles_principaltypes') {
-            const entries = Object.entries(dataSources.entraroles_principaltypes);
+            const entries = Object.entries(dataSources.entraroles_principaltypes).filter(e => e[1] > 0);
             return {
                 labels: entries.map(e => e[0]),
                 datasets: [{
@@ -893,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', function () {
             };
         }
         if (datasetKey === 'azureroles_principaltypes') {
-            const entries = Object.entries(dataSources.azureroles_principaltypes);
+            const entries = Object.entries(dataSources.azureroles_principaltypes).filter(e => e[1] > 0);
             return {
                 labels: entries.map(e => e[0]),
                 datasets: [{
@@ -914,51 +1044,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const titleColor = isDarkMode ? '#ccc' : '#222';
         const labelColor = isDarkMode ? '#eee' : '#111';
         const chartData = getChartData(datasetKey);
-        const hasData = hasRenderableChartData(chartData);
 
         if (chartData && Array.isArray(chartData.datasets)) {
             chartData.datasets.forEach(function (dataset) {
                 dataset.backgroundColor = getDatasetColors(datasetKey, chartData.labels);
-                if (!hasData) {
-                    dataset.backgroundColor = 'rgba(0,0,0,0)';
-                    dataset.borderColor = 'rgba(0,0,0,0)';
-                    dataset.hoverBackgroundColor = 'rgba(0,0,0,0)';
-                    dataset.hoverBorderColor = 'rgba(0,0,0,0)';
-                    dataset.borderWidth = 0;
-                }
             });
         }
 
-        const plugins = [{
-            id: 'emptyState',
-            afterDraw: (chart) => {
-                if (hasData) {
-                    return;
-                }
-
-                const { ctx, chartArea } = chart;
-                if (!chartArea) {
-                    return;
-                }
-
-                ctx.save();
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = isDarkMode ? '#bbbbbb' : '#666666';
-                ctx.font = '600 14px Arial';
-                ctx.fillText('No data available', (chartArea.left + chartArea.right) / 2, (chartArea.top + chartArea.bottom) / 2);
-                ctx.restore();
-            }
-        }];
+        const plugins = [];
 
         if (type === 'bar') {
             plugins.push({
                 id: 'barValueLabels',
                 afterDatasetsDraw: (chart) => {
-                    if (!hasData) {
-                        return;
-                    }
-
                     const { ctx, chartArea } = chart;
                     const isHorizontal = chart.options.indexAxis === 'y';
 
@@ -1002,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        if (type === 'doughnut' && hasData) {
+        if (type === 'doughnut') {
             plugins.push({
                 id: 'centerText',
                 beforeDraw: (chart) => {
@@ -1030,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 indexAxis: indexAxis,
                 plugins: {
                     legend: {
-                        display: hasData && showLegend,
+                        display: showLegend,
                         position: 'top',
                         labels: { color: axisColor }
                     },
@@ -1044,12 +1142,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
                 scales: type === 'bar' ? {
                     x: {
-                        display: hasData,
+                        display: true,
                         ticks: { color: axisColor },
                         grid: { color: gridColor }
                     },
                     y: {
-                        display: hasData,
+                        display: true,
                         ticks: { color: axisColor },
                         grid: { color: gridColor }
                     }
@@ -1057,6 +1155,26 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             plugins
         };
+    }
+
+    function updateChartSectionVisibility() {
+        document.querySelectorAll('.summary-chart-panel').forEach(panel => {
+            const chartGrid = panel.querySelector('.chart-grid');
+            if (!chartGrid) {
+                return;
+            }
+
+            const chartBoxes = Array.from(chartGrid.querySelectorAll('.chart-box'));
+            const visibleChartBoxes = chartBoxes.filter(box => box.style.display !== 'none');
+            const metaNode = panel.querySelector('.summary-chart-panel-meta');
+            const visibleCount = visibleChartBoxes.length;
+
+            panel.style.display = visibleCount > 0 ? '' : 'none';
+
+            if (metaNode) {
+                metaNode.textContent = String(visibleCount) + ' chart' + (visibleCount === 1 ? '' : 's');
+            }
+        });
     }
 
     // === 3. Chart layout/config ===
@@ -1079,6 +1197,7 @@ document.addEventListener('DOMContentLoaded', function () {
         { id: 'enterpriseapps_chart1', title: 'Internal vs Foreign', type: 'doughnut', dataset: 'enterpriseapps_general' },
         { id: 'enterpriseapps_chart2', title: 'Credential Presence', type: 'bar', dataset: 'enterpriseapps_credentials', showLegend: false },
         { id: 'enterpriseapps_chart3', title: 'API Permission Severity', type: 'bar', dataset: 'enterpriseapps_apicategorization', indexAxis: 'y', showLegend: false },
+        { id: 'enterpriseapps_chart4', title: 'Last Successful Sign-In', type: 'bar', dataset: 'enterpriseapps_lastsignin', indexAxis: 'y', showLegend: false },
 
         // ============ App Registrations ============
         { id: 'appregistrations_chart1', title: 'Tenant Audience', type: 'doughnut', dataset: 'appregistrations_general' },
@@ -1088,6 +1207,14 @@ document.addEventListener('DOMContentLoaded', function () {
         // ============ Managed Identities  ============
         { id: 'managedidentities_chart1', title: 'System vs User Assigned', type: 'doughnut', dataset: 'managedidentities_general' },
         { id: 'managedidentities_chart2', title: 'API Permission Severity', type: 'bar', dataset: 'managedidentities_apicategorization', indexAxis: 'y', showLegend: false },
+
+        // ============ Agent Identities ============
+        { id: 'agentidentities_chart1', title: 'Agent Identity Ecosystem', type: 'bar', dataset: 'agentidentities_overview', indexAxis: 'y', showLegend: false },
+        { id: 'agentidentities_chart2', title: 'Agent Identities: Internal vs Foreign', type: 'doughnut', dataset: 'agentidentities_general' },
+        { id: 'agentidentities_chart3', title: 'Agent Identities: Active vs Inactive', type: 'bar', dataset: 'agentidentities_inactive', showLegend: false },
+        { id: 'agentidentities_chart4', title: 'Agent Identities: API Permission Severity', type: 'bar', dataset: 'agentidentities_apicategorization', indexAxis: 'y', showLegend: false },
+        { id: 'agentidentities_chart5', title: 'Agent Blueprint Principals: Internal vs Foreign', type: 'doughnut', dataset: 'agentblueprintprincipals_general' },
+        { id: 'agentidentities_chart6', title: 'Agent Blueprints: Credential Types', type: 'bar', dataset: 'agentblueprints_credentials', indexAxis: 'y', showLegend: false },
 
         // ============ Entra Roles ============
         { id: 'entraroles_chart1', title: 'Eligible vs Active', type: 'doughnut', dataset: 'entraroles_general' },
@@ -1109,14 +1236,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
         chartConfigs.forEach(config => {
             const ctx = document.getElementById(config.id);
-            if (ctx) {
-                const chart = new Chart(
-                    ctx,
-                    getChartOptions(config.title, config.type, config.dataset, config.indexAxis || 'x', config.showLegend !== false)
-                );
-                chartInstances.push(chart);
+            if (!ctx) {
+                return;
             }
+
+            const chartBox = ctx.closest('.chart-box');
+            const chartData = getChartData(config.dataset);
+            const hasData = hasRenderableChartData(chartData);
+
+            if (!hasData) {
+                if (chartBox) {
+                    chartBox.style.display = 'none';
+                }
+                return;
+            }
+
+            if (chartBox) {
+                chartBox.style.display = '';
+            }
+
+            const chart = new Chart(
+                ctx,
+                getChartOptions(config.title, config.type, config.dataset, config.indexAxis || 'x', config.showLegend !== false)
+            );
+            chartInstances.push(chart);
         });
+
+        updateChartSectionVisibility();
     }
 
     renderCharts(); // Initial load
@@ -1424,6 +1570,9 @@ Enumeration Results:
     - App Registrations:           $($GlobalAuditSummary.AppRegistrations.Count)
     - Enterprise Applications:     $($GlobalAuditSummary.EnterpriseApps.Count) ($($GlobalAuditSummary.EnterpriseApps.Foreign) Foreign)
     - Managed Identities:          $($GlobalAuditSummary.ManagedIdentities.Count)
+    - Agent Identities:            $($GlobalAuditSummary.AgentIdentities.Count)
+    - Agent Blueprint Principals:  $($GlobalAuditSummary.AgentIdentityBlueprintsPrincipals.Count)
+    - Agent Blueprints:            $($GlobalAuditSummary.AgentIdentityBlueprints.Count)
     - Administrative Units:        $($GlobalAuditSummary.AdministrativeUnits.Count)
     - Conditional Access Policies: $($GlobalAuditSummary.ConditionalAccess.Count) ($($GlobalAuditSummary.ConditionalAccess.Enabled) Enabled)
     - Domains:                     $(@($TenantDomains).Count)
