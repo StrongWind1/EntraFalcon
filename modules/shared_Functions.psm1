@@ -5,15 +5,99 @@
 
 ############################## Static variables ########################
 
+# Reference list for known malicious Enterprise Application client IDs.
+$global:GLOBALKnownMaliciousEnterpriseApps = @{
+    'fc5d3843-d0e8-4c3f-b0ee-6d407f667751' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '5037c1a6-7cfc-48b5-b887-f2a045937081' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '58427324-4e5d-4441-b029-cd2d532b47d7' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '706e0542-2dfb-4e7f-98f0-1e17eab6d5b8' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'b0d8ea55-bc29-436c-9f8b-f8829030261d' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'c4d0b015-689a-4bcf-b69b-3ed5005fddb6' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'c52517b0-46eb-4d61-975a-771d9978dac0' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'f927b0f3-6fce-4d59-a246-904fa7317969' = 'https://github.com/Cyera-Research-Labs/m365-malicious-app-iocs'
+    '355d1228-1537-4e90-80a6-dae111bb4d70' = 'https://rhisac.org/threat-intelligence/microsoft-oauth-app-impersonation-leads-to-mfa-phishing/'
+    '14b2864e-3cff-4d33-b5cd-7f14ca272ea4' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '85da47ec-2977-40ab-af03-f3d45aaab169' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'fc45d3d0-d870-4c83-b3f7-08ebca61d3a0' = 'https://raw.githubusercontent.com/anak0ndah/EntraHunt/main/data/threats.json'
+    '6a77659d-dd6f-4c73-a555-aed25926a05f' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '6628b5b8-55af-42b4-9797-5cd5c148313c' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '599fc26c-5a11-432e-a1b1-f441314ab378' = 'https://www.proofpoint.com/us/blog/cloud-security/dangerous-consequences-threat-actors-abusing-microsofts-verified-publisher'
+    '2e024fe5-fe68-4b4f-893a-53630a97b0ae' = 'https://www.proofpoint.com/us/blog/cloud-security/dangerous-consequences-threat-actors-abusing-microsofts-verified-publisher'
+    '8bf3e5b9-2888-4cf3-b82f-9ba6e8a1a8b9' = 'https://www.proofpoint.com/us/blog/cloud-security/dangerous-consequences-threat-actors-abusing-microsofts-verified-publisher'
+    'a3903ccd-ec81-4264-8f6a-a7d4cd395fd5' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'db2eb385-c02f-44fc-b204-ade7d9f418b1' = 'https://github.com/Cyera-Research-Labs/m365-malicious-app-iocs'
+    'fdcf7337-92bf-4c70-9888-ea234b6ffb0d' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'f99a0806-7650-4d78-acef-71e445dfc844' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'f66985e0-7bb1-4cc5-a871-1cea533665d9' = 'https://github.com/Cyera-Research-Labs/m365-malicious-app-iocs'
+    '854189f9-4c71-44bb-9880-dd0c2f75922a' = 'https://raw.githubusercontent.com/anak0ndah/EntraHunt/main/data/threats.json'
+    '2ef68ccc-8a4d-42ff-ae88-2d7bb89ad139' = 'https://raw.githubusercontent.com/anak0ndah/EntraHunt/main/data/threats.json'
+    'b7cb9a9b-ddc9-4444-935b-1122733c97c4' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '57b8c81f-1d9a-42fe-8ba5-2262822d7291' = 'https://www.joesandbox.com/joereverser/analysis/download/8d0148db-3ef0-401f-ab09-60523df1531f'
+    '31c6b531-dd95-4361-93df-f5a9c906da39' = 'https://github.com/Cyera-Research-Labs/m365-malicious-app-iocs'
+    'c7121e86-fe4d-4dbd-b5f3-e61a62ee533a' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'a69a0f78-a77c-451c-b090-b766425caee2' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'ff8d92dc-3d82-41d6-bcbd-b9174d163620' = 'https://raw.githubusercontent.com/anak0ndah/EntraHunt/main/data/threats.json'
+    'bbc79423-4b95-4ab5-814f-5437a954126c' = 'https://www.joesandbox.com/analysis/1887080/0/html'
+    '1e69a9f6-bb18-452a-baba-b4650ff21882' = 'https://github.com/Cyera-Research-Labs/m365-malicious-app-iocs'
+    '48cb1fac-7195-47b3-98b2-fe3562bee75c' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '482fb03a-5218-43c2-8ce6-61956c7ca99b' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '4e4d64ac-4a2a-432c-b79e-65ca8213ede5' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '768a57a0-1c5e-477a-939a-63aebf2e5ecf' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'a43a3d51-c821-4b86-9a63-fbc775120fc2' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '0bd8e698-4298-405a-bc6b-da5647a4616b' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    'a8ca8dad-f6e6-4b01-9d6b-02e1da6c9d7f' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '055399fa-29b9-46ab-994d-4ae06f40bada' = 'https://rhisac.org/threat-intelligence/microsoft-oauth-app-impersonation-leads-to-mfa-phishing/'
+    '22c606e8-7d68-4a09-89d9-c3c563a453a0' = 'https://rhisac.org/threat-intelligence/microsoft-oauth-app-impersonation-leads-to-mfa-phishing/'
+    '987c259f-da29-4575-8072-96c610204830' = 'https://rhisac.org/threat-intelligence/microsoft-oauth-app-impersonation-leads-to-mfa-phishing/'
+    'fe0e32ca-d09e-4f80-af3c-5b086d4b8e66' = 'https://rhisac.org/threat-intelligence/microsoft-oauth-app-impersonation-leads-to-mfa-phishing/'
+    '00afba72-9008-454f-bbe6-d24e743fbe73' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '1b6f59dd-45da-4ff7-9b70-36fb780f855b' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '3cc07cb4-dba8-4051-82cd-93250a43b53b' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '440f4886-2c3a-4269-a78c-088b3b521e02' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '6755c710-194d-464f-9365-7d89d773b443' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '6efe57d9-b00a-4091-b861-a16b7368ab11' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '6fae87b3-3a0f-4519-8b56-006ba50f62c4' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '89430f84-6c29-43f8-9b23-62871a314417' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '8c659c19-8a90-49b0-a9f1-15aeba3bb449' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '9a36eaa2-cf9d-4e50-ad3e-58c9b5c04255' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    'a68c61ee-6185-4b36-bc59-1dca946d95cb' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    'bc618bf4-c6d1-4653-8c4d-c6036001b226' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    'c752e1ef-e475-43c0-9b97-9c9832dd3755' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    'f73c6332-4618-4b9d-bcd4-c77726581acd' = 'https://github.com/guardzcom/security-research-labs/blob/main/Threat-Intel/IOCs/OAuth-abuse/Microsoft-Intel-OAuth.md'
+    '21f81c9e-475d-4c26-9308-1de74a286f73' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '626b6813-13dc-45d7-abfe-a7fe09fd5276' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '443efa1c-8a0a-47a0-bd31-7c30fe32dee4' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+    '3280b1dc-4b64-4f90-a16a-b0804e6ec4ca' = 'https://www.wiz.io/blog/detecting-malicious-oauth-applications'
+}
+
+function Get-KnownMaliciousEnterpriseApp {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)][string]$AppId
+    )
+
+    if ([string]::IsNullOrWhiteSpace($AppId)) {
+        return $null
+    }
+
+    $normalizedAppId = $AppId.Trim().ToLowerInvariant()
+    if ($global:GLOBALKnownMaliciousEnterpriseApps.ContainsKey($normalizedAppId)) {
+        return [string]$global:GLOBALKnownMaliciousEnterpriseApps[$normalizedAppId]
+    }
+
+    return $null
+}
+
 $global:GLOBALMainTableDetailsHEAD = @'
 <div id="mainTableContainer">
-  <label>
+  <div class="page-size-wrapper">
+    <span class="page-size-icon">&#x2630;</span>
     <select id="pageSize">
-      <option value="1000">1000</option>
-      <option value="5000">5000</option>
-      <option value="10000">10000</option>
+      <option value="1000">1000 rows</option>
+      <option value="5000">5000 rows</option>
+      <option value="10000">10000 rows</option>
     </select>
-  </label>
+  </div>
   <div id="tableWrapper"></div>
   <div id="paginationControls"></div>
 </div>
@@ -118,8 +202,10 @@ $global:GLOBALJavaScript_Table = @'
                     label: "Users Without MFA Methods",
                     filters: {
                         MfaCap: "=false",
-                        Agent: "=false"
-                    }
+                        Agent: "=false",
+                        UPN: "!^Sync_&&!^ADToAADSyncServiceAccount"
+                    },
+                    columns: ["UPN", "Enabled", "UserType", "GrpMem", "GrpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "Inactive", "AppRegOwn", "SPOwn", "Impact", "MfaCap", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     id: "PVU-008",
@@ -154,6 +240,20 @@ $global:GLOBALJavaScript_Table = @'
                     sort: { column: "CreatedDays", direction: "asc" }
                 },
                 {
+                    id: "PVU-015",
+                    group: "Lifecycle",
+                    description: "Enabled synced user older than 90 days with no sign-in",
+                    label: "Unnecessary Synced Users",
+                    filters: {
+                        Enabled: "=true",
+                        OnPrem: "=true",
+                        LastSignInDays: "=-",
+                        CreatedDays: ">90"
+                    },
+                    columns: ["UPN", "Enabled", "OnPrem", "LicenseStatus", "GrpMem", "GrpOwn", "AuUnits", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "AppRoles", "AppRegOwn", "SPOwn", "Inactive", "LastSignInDays", "CreatedDays", "MfaCap", "Impact", "Likelihood", "Risk", "Warnings"],
+                    sort: { column: "Impact", direction: "desc" }
+                },
+                {
                     id: "PVU-011",
                     group: "Identity Type",
                     description: "Accounts flagged as agent/workload identities",
@@ -161,7 +261,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         Agent: "=True"
                     },
-                    columns: ["UPN", "Enabled", "Agent", "GrpMem", "GrpOwn", "AppRegOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "Inactive", "LastSignInDays", "CreatedDays", "Impact", "MfaCap", "Likelihood", "Risk", "Warnings"]
+                    columns: ["UPN", "Enabled", "Agent", "ForeignAgent", "GrpMem", "GrpOwn", "AppRegOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "Inactive", "LastSignInDays", "CreatedDays", "Impact", "MfaCap", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     id: "PVU-012",
@@ -224,7 +324,7 @@ $global:GLOBALJavaScript_Table = @'
                         CAPs: "or_>0",
                         Warnings: "or_Eligible"
                     },
-                    columns: ["DisplayName", "Type", "Dynamic", "Protected", "SecurityEnabled", "Visibility", "Users", "Devices", "NestedInGroups", "AppRoles", "CAPs", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "Impact", "Likelihood", "Risk", "Warnings"],
+                    columns: ["DisplayName", "Type", "Dynamic", "Protected", "SecurityEnabled", "Visibility", "Users", "NestedInGroups", "AppRoles", "CAPs", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "Impact", "Likelihood", "Risk", "Warnings"],
                     sort: { column: "Impact", direction: "desc" }
                 },
                 {
@@ -297,6 +397,7 @@ $global:GLOBALJavaScript_Table = @'
                         ApiHigh: "or_>0",
                         ApiMedium: "or_>0",
                         AppOwn: "or_>0",
+                        BlueprintOwn: "or_>0",
                         SpOwn: "or_>0",
                         ApiDelegatedDangerous: "or_>0",
                         ApiDelegatedHigh: "or_>0",
@@ -305,7 +406,7 @@ $global:GLOBALJavaScript_Table = @'
                         AzureRoles: "or_>0",
                         Warnings: "or_through group"
                     },
-                    columns: ["DisplayName", "PublisherName", "Enabled", "Inactive", "Foreign", "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
+                    columns: ["DisplayName", "PublisherName", "Enabled", "Inactive", "Foreign", "GrpMem", "GrpOwn", "AppOwn", "BlueprintOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     id: "PVE-002",
@@ -357,12 +458,13 @@ $global:GLOBALJavaScript_Table = @'
                         ApiDelegatedDangerous: "or_>0",
                         ApiDelegatedHigh: "or_>0",
                         AppOwn: "or_>0",
+                        BlueprintOwn: "or_>0",
                         SpOwn: "or_>0",
                         EntraMaxTier: "or_Tier-0||Tier-1",
                         AzureMaxTier: "or_Tier-0||Tier-1",
                         Warnings: "or_through group"
                     },
-                    columns: ["DisplayName", "Foreign", "Enabled", "Inactive", "AppOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegatedDangerous", "ApiDelegatedHigh", "Impact", "Likelihood", "Risk", "Warnings"]
+                    columns: ["DisplayName", "Foreign", "Enabled", "Inactive", "AppOwn", "BlueprintOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegatedDangerous", "ApiDelegatedHigh", "Impact", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     id: "PVE-006",
@@ -373,7 +475,7 @@ $global:GLOBALJavaScript_Table = @'
                         Credentials: ">0",
                         SAML: "=false",
                     },
-                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "SAML", "Credentials", "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "SAML", "Credentials", "GrpMem", "GrpOwn", "AppOwn", "BlueprintOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     id: "PVE-007",
@@ -383,7 +485,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         Owners: ">0"
                     },
-                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Owners", "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Owners", "GrpMem", "GrpOwn", "AppOwn", "BlueprintOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
                 },
                 {
                     id: "PVE-008",
@@ -394,7 +496,7 @@ $global:GLOBALJavaScript_Table = @'
                         Inactive: "=true",
                         Enabled: "=true"
                     },
-                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "LastSignInDays", "CreationInDays", "Owners", "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"],
+                    columns: ["DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "LastSignInDays", "CreationInDays", "Owners", "GrpMem", "GrpOwn", "AppOwn", "BlueprintOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"],
                     sort: { column: "LastSignInDays", direction: "desc" }
                 },
                 {
@@ -405,7 +507,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         DisplayName: "^ConnectSyncProvisioning_"
                     },
-                    columns: ["DisplayName", "Enabled", "Inactive", "Owners", "Credentials", "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
+                    columns: ["DisplayName", "Enabled", "Inactive", "Owners", "Credentials", "GrpMem", "GrpOwn", "AppOwn", "BlueprintOwn", "SpOwn", "EntraRoles", "AzureRoles", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "ApiDelegated", "Impact", "Likelihood", "Risk", "Warnings"]
                 }
             ],
             "Managed Identities": [
@@ -419,12 +521,13 @@ $global:GLOBALJavaScript_Table = @'
                         ApiHigh: "or_>0",
                         ApiMedium: "or_>0",
                         AppOwn: "or_>0",
+                        BlueprintOwn: "or_>0",
                         SpOwn: "or_>0",
                         EntraMaxTier: "or_Tier-0||Tier-1",
                         AzureMaxTier: "or_Tier-0||Tier-1",
                         Warnings: "or_through group"
                     },
-                    columns: ["DisplayName", "IsExplicit", "GroupMembership", "GroupOwnership", "AppOwnership", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "Impact", "Likelihood", "Risk", "Warnings"],
+                    columns: ["DisplayName", "IsExplicit", "GroupMembership", "GroupOwnership", "AppOwnership", "BlueprintOwn", "SpOwn", "EntraRoles", "EntraMaxTier", "AzureRoles", "AzureMaxTier", "ApiDangerous", "ApiHigh", "ApiMedium", "ApiLow", "ApiMisc", "Impact", "Likelihood", "Risk", "Warnings"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -811,6 +914,95 @@ $global:GLOBALJavaScript_Table = @'
                     columns: ["Role", "Tier", "Eligible", "ActivationAuthContext", "ActivationMFA", "ActivationJustification", "ActivationTicketing", "ActivationApproval", "ActivationDuration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
                 }
             ],
+            "PIM Groups": [
+                {
+                    id: "PVPG-001",
+                    group: "Tier",
+                    description: "PIM-enabled groups with Tier-0 impact through Entra ID",
+                    label: "Entra Tier-0 Groups",
+                    filters: {
+                        EntraMaxTier: "=Tier-0"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationAuthContext", "ActivationMFA", "ActivationApproval", "Warnings"]
+                },
+                {
+                    id: "PVPG-002",
+                    group: "Tier",
+                    description: "PIM-enabled groups with Tier-0 impact through Entra ID or Azure",
+                    label: "Tier-0 Groups",
+                    filters: {
+                        EntraMaxTier: "or_Tier-0",
+                        AzureMaxTier: "or_Tier-0"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationAuthContext", "ActivationMFA", "ActivationApproval", "Warnings"]
+                },
+                {
+                    id: "PVPG-003",
+                    group: "Tier",
+                    description: "PIM-enabled groups with Tier-0 or Tier-1 impact through Entra ID or Azure",
+                    label: "Tier-0/1 Groups",
+                    filters: {
+                        EntraMaxTier: "or_Tier-0 || Tier-1",
+                        AzureMaxTier: "or_Tier-0 || Tier-1"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationAuthContext", "ActivationMFA", "ActivationApproval", "Warnings"]
+                },
+                {
+                    id: "PVPG-004",
+                    group: "Security",
+                    description: "PIM group roles with active warnings",
+                    label: "Groups With Warnings",
+                    filters: {
+                        Warnings: "!=empty"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationAuthContext", "ActivationApproval", "ActivationDuration", "ActiveExpiration", "Warnings"]
+                },
+                {
+                    id: "PVPG-005",
+                    group: "Usage",
+                    description: "Group roles with at least one eligible or currently active assignment",
+                    label: "Used Group Roles",
+                    filters: {
+                        Eligible: "or_>0",
+                        Active: "or_>0"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationAuthContext", "ActivationMFA", "ActivationApproval", "Warnings"]
+                },
+                {
+                    id: "PVPG-006",
+                    group: "Usage",
+                    description: "Group roles with active assignments but no eligible assignments",
+                    label: "Active Without Eligible",
+                    filters: {
+                        Eligible: "=0",
+                        Active: ">0"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActiveExpiration", "ActiveAssignMFA", "ActiveAssignJustification", "Warnings"]
+                },
+                {
+                    id: "PVPG-007",
+                    group: "Security",
+                    description: "Tier-0/1 group roles missing AuthContext or approval",
+                    label: "High Tier Missing Controls",
+                    filters: {
+                        EntraMaxTier: "or_Tier-0 || Tier-1",
+                        AzureMaxTier: "or_Tier-0 || Tier-1",
+                        ActivationAuthContext: "false",
+                        ActivationApproval: "false"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationAuthContext", "ActivationApproval", "Warnings"]
+                },
+                {
+                    id: "PVPG-008",
+                    group: "Security",
+                    description: "Group roles with long activation duration warnings",
+                    label: "Long Activation Duration",
+                    filters: {
+                        Warnings: "long activation time"
+                    },
+                    columns: ["Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active", "ActivationDuration", "Warnings"]
+                }
+            ],
             "Agent Identities": [
                 {
                     id: "PVAI-001",
@@ -996,7 +1188,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         BlueprintPrincipals: ">0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -1007,7 +1199,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         AgentIdentities: ">0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -1018,7 +1210,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         AgentUsers: ">0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "BlueprintPrincipals", "AgentIdentities", "AgentUsers", "Impact", "Risk"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -1030,7 +1222,7 @@ $global:GLOBALJavaScript_Table = @'
                         InheritableScopes: "or_>0",
                         InheritableRoles: "or_>0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "Impact", "Risk"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -1043,7 +1235,7 @@ $global:GLOBALJavaScript_Table = @'
                         SecretsCount: "or_>0",
                         CertsCount: "or_>0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "FederatedCreds", "SecretsCount", "CertsCount", "BlueprintPrincipals", "AgentIdentities", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "FederatedCreds", "SecretsCount", "CertsCount", "BlueprintPrincipals", "AgentIdentities", "Impact", "Risk"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -1054,7 +1246,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         SecretsCount: ">0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "SecretsCount", "CertsCount", "FederatedCreds", "CreationInDays", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "SecretsCount", "CertsCount", "FederatedCreds", "CreationInDays", "Impact", "Risk"],
                     sort: { column: "Risk", direction: "desc" }
                 },
                 {
@@ -1065,7 +1257,7 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         AgentIdentities: "=0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "CreationInDays", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "CreationInDays", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Risk"],
                     sort: { column: "CreationInDays", direction: "desc" }
                 },
                 {
@@ -1076,14 +1268,232 @@ $global:GLOBALJavaScript_Table = @'
                     filters: {
                         BlueprintPrincipals: "=0"
                     },
-                    columns: ["DisplayName", "SignInAudience", "CreationInDays", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Risk"],
+                    columns: ["DisplayName", "SignInAudience", "Enabled", "CreationInDays", "BlueprintPrincipals", "AgentIdentities", "InheritableScopes", "InheritableRoles", "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Risk"],
                     sort: { column: "CreationInDays", direction: "desc" }
                 }
             ]
         };
 
         //Define columns which are hidden by default
-        const defaultHidden = ["DeviceReg", "DeviceOwn", "LicenseStatus", "OwnersSynced", "DefaultMS", "CreationInDays", "AppRoleRequired", "SAML", "RoleAssignable", "LastSignInDays", "CreatedDays", "ParentBlueprintDisplayName","ActiveAssignJustification","AlertAssignEligible","AlertAssignActive", "AlertActivation", "EligibleExpirationTime", "ActiveExpirationTime", "SignInFrequency", "SignInFrequencyInterval", "ApiDelegatedDangerous", "ApiDelegatedHigh", "ApiDelegatedMedium", "ApiDelegatedLow", "ApiDelegatedMisc", "IncUsersViaGroups", "ExcUsersViaGroups", "PerUserMfa", "ExcUsersViaRoles", "IncUsersViaRoles"];
+        const defaultHidden = ["DeviceReg", "DeviceOwn", "LicenseStatus", "OwnersSynced", "DefaultMS", "CreationInDays", "AppRoleRequired", "SAML", "RoleAssignable", "LastSignInDays", "CreatedDays", "ParentBlueprintDisplayName", "ForeignAgent","ActiveAssignJustification","AlertAssignEligible","AlertAssignActive", "AlertActivation", "EligibleExpirationTime", "ActiveExpirationTime", "SignInFrequency", "SignInFrequencyInterval", "ApiDelegatedDangerous", "ApiDelegatedHigh", "ApiDelegatedMedium", "ApiDelegatedLow", "ApiDelegatedMisc", "IncUsersViaGroups", "ExcUsersViaGroups", "PerUserMfa", "ExcUsersViaRoles", "IncUsersViaRoles"];
+
+        // Responsive column profiles keyed by currentReportKey from the report manifest.
+        // Profiles define which columns are VISIBLE; all unlisted columns are hidden.
+        // Applied once at page load — not re-evaluated on resize.
+        // Skipped when ?columns= or ?view= is present in the URL.
+        // Reset View always returns to full defaults, ignoring this profile.
+        // When adding a new column to a report module, add it to the relevant profile(s) here too.
+        const responsiveColumnProfiles = {
+            // Reports with both laptop (<= 1600px) and compact (<= 1200px) tiers
+            "EA": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive",
+                        "Owners", "Credentials", "AppOwn", "BlueprintOwn", "SpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "ApiDangerous", "ApiHigh", "ApiMedium", "ApiDelegated",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive", "Owners", "Credentials", "AppOwn", "BlueprintOwn", "SpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "ApiDangerous", "ApiHigh", "ApiDelegated",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "Users": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "UPN", "Enabled", "UserType", "Agent", "OnPrem", "Protected",
+                        "GrpMem", "GrpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "AppRoles", "AppRegOwn", "BlueprintOwn", "SPOwn",
+                        "Inactive", "MfaCap",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "UPN", "Enabled", "UserType", "OnPrem",
+                        "GrpMem", "GrpOwn", "EntraMaxTier",  "AzureMaxTier", "AppRegOwn", "BlueprintOwn", "SPOwn",
+                        "Inactive", "MfaCap",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "Groups": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "DisplayName", "Type", "OnPrem", "Dynamic",
+                        "Visibility", "Protected", "PIM", "AuUnits", "DirectOwners",
+                        "Users", "SPCount","NestedGroups",
+                        "AppRoles", "CAPs",  "EntraMaxTier", "AzureMaxTier",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "Type", "OnPrem", "Dynamic",
+                        "Visibility", "Protected", "PIM", "DirectOwners",
+                        "Users", "SPCount", "CAPs", "EntraMaxTier", "AzureMaxTier",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "CAP": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "DisplayName", "UserCoverage", "State", "IncResources", "ExcResources",
+                        "IncPlatforms", "ExcPlatforms",
+                        "SignInRisk", "UserRisk", "IncNw", "ExcNw", "AuthFlow", "UserActions",
+                        "GrantControls", "AuthStrength", "Warnings"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "UserCoverage", "State", "IncResources", "ExcResources",
+                        "SignInRisk", "UserRisk", "IncNw", "ExcNw", "AuthFlow", "UserActions",
+                        "GrantControls", "AuthStrength", "Warnings"
+                    ]
+                }
+            },
+            "AgentIdentities": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive",
+                        "AgentUsers", "Owners",
+                        "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "ApiDangerous", "ApiHigh", "ApiMedium", "ApiMisc", "ApiDelegated",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "Foreign", "Enabled", "Inactive",
+                        "AgentUsers",
+                        "GrpMem", "GrpOwn", "AppOwn", "SpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "ApiDangerous", "ApiHigh", "ApiDelegated",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "MI": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "DisplayName", "IsExplicit", "GroupMembership", "GroupOwnership",
+                        "AppOwnership", "BlueprintOwn", "SpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "ApiDangerous", "ApiHigh", "ApiMedium", "ApiMisc",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "GroupMembership", "GroupOwnership",
+                        "AppOwnership", "BlueprintOwn", "SpOwn", "EntraMaxTier", "AzureMaxTier",
+                        "ApiDangerous", "ApiHigh", "ApiMedium",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            // Reports with compact (<= 1200px) tier only — full defaults apply between 1200px and 1600px
+            "AR": {
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "Enabled", "AppLock",
+                        "AppRoles", "Owners", "CloudAppAdmins", "AppAdmins",
+                        "SecretsCount", "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "AgentIdentityBlueprints": {
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "SignInAudience", "Enabled", "BlueprintPrincipals", "AgentIdentities",
+                        "AgentUsers", "Owners", "InheritableScopes", "InheritableRoles",
+                        "FederatedCreds", "SecretsCount", "CertsCount", "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "AgentIdentityBlueprintsPrincipals": {
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "DisplayName", "PublisherName", "Foreign", "Enabled", "Inactive",
+                        "AgentIdentities", "AgentUsers", "AppRoles",
+                        "ApiDangerous", "ApiHigh", "ApiMedium", "ApiDelegated",
+                        "Impact", "Likelihood", "Risk", "Warnings"
+                    ]
+                }
+            },
+            "RoleEntra": {
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "Role", "RoleTier", "AssignmentType", "ActivatedViaPIM", "Expires", "Principal", "PrincipalType", "Scope"
+                    ]
+                }
+            },
+            "RoleAz": {
+                laptop: {
+                    maxWidth: 1600,
+                    columns: [
+                        "Scope", "Role", "RoleTier", "Conditions", "AssignmentType", "ActivatedViaPIM", "PrincipalType", "Principal"
+                    ]
+                },
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "Scope", "Role", "RoleTier", "AssignmentType", "PrincipalType", "Principal"
+                    ]
+                }
+            },
+            "PIM": {
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "Role", "Tier", "Eligible", "Direct",
+                        "ActivationAuthContext", "ActivationMFA",
+                        "ActivationDuration", "ActivationApproval",
+                        "ActiveExpiration", "ActiveAssignMFA", "Warnings"
+                    ]
+                }
+            },
+            "PIMGroups": {
+                compact: {
+                    maxWidth: 1200,
+                    columns: [
+                        "Group", "Role", "EntraMaxTier", "AzureMaxTier", "Eligible", "Active",
+                        "ActivationAuthContext", "ActivationMFA",
+                        "ActivationDuration", "ActivationApproval",
+                        "ActiveExpiration", "ActiveAssignMFA", "Warnings"
+                    ]
+                }
+            }
+        };
+
+        // Returns the matching responsive column list for the given report key, or null if no tier applies.
+        function getResponsiveProfile(reportKey) {
+            const profile = responsiveColumnProfiles[reportKey];
+            if (!profile) return null;
+            const vw = window.innerWidth || document.documentElement.clientWidth || 9999;
+            if (profile.compact && vw <= profile.compact.maxWidth) return profile.compact.columns;
+            if (profile.laptop && vw <= profile.laptop.maxWidth) return profile.laptop.columns;
+            return null;
+        }
 
         // Function to obtain the GET parameters from the URL
         function getURLParams() {
@@ -1118,6 +1528,7 @@ $global:GLOBALJavaScript_Table = @'
             "GrpOwn": "Owner of groups",
             "SpOwn": "Owned Service Principals",
             "AppOwn": "Owned App Registrations",
+            "BlueprintOwn": "Owned Agent Identity Blueprints",
             "AppRegOwn": "Owner of App Registrations",
             "EntraMaxTier": "Highest assigned Entra role tier (directly or through groups)",
             "AzureMaxTier": "Highest assigned Azure role tier (directly or through groups)",
@@ -1126,6 +1537,7 @@ $global:GLOBALJavaScript_Table = @'
             "PIM": "Onboarded to PIM for Groups",
             "Protected": "Not role assignable, not synced from on-prem, not in a restricted Administrative Unit.\nTherefore: cannot be modified by low-tier admin",
             "Eligible": "Number of eligible role assignments",
+            "Active": "Number of currently active assignments",
             "Direct": "Number of directly assigned active role assignments that are not activated via PIM",
             "Activated": "Number of currently active role assignments activated via PIM",
             "AssignmentType": "Activated eligible assignments also appear as active",
@@ -1133,7 +1545,8 @@ $global:GLOBALJavaScript_Table = @'
             "UserCoverage": "Percentage of tenant users covered by the policy after exclusions. External users are only approximated for b2bCollaborationGuest and do not include all types or tenant-specific selections.",
             "InheritableScopes": "Number of APIs for which the blueprint permits child agent identities to inherit delegated permission scopes",
             "InheritableRoles": "Number of APIs for which the blueprint permits child agent identities to inherit application role permissions",
-            "Agent": "User object parented to an agent identity (agent user)"
+            "Agent": "User object parented to an agent identity (agent user)",
+            "ForeignAgent": "Agent user whose parent blueprint principal is foreign"
         };
     
         (function () {    
@@ -1177,7 +1590,45 @@ $global:GLOBALJavaScript_Table = @'
             let currentSort = { column: null, asc: true };
             let columnFilters = {};
             let hiddenColumns = new Set();
+            let responsiveProfileApplied = false;
             let filterDebounceTimer = null;
+
+            function normalizeSortColumn(column) {
+                if (column == null) return null;
+                const desired = String(column).trim().toLowerCase();
+                if (!desired) return null;
+                return columns.find(col => col.toLowerCase() === desired) || null;
+            }
+
+            function isValidSortColumn(column) {
+                return normalizeSortColumn(column) !== null;
+            }
+
+            function getDefaultSort() {
+                const riskColumn = normalizeSortColumn("Risk");
+                return riskColumn ? { column: riskColumn, asc: false } : null;
+            }
+
+            function sortEquals(a, b) {
+                if (!a && !b) return true;
+                if (!a || !b) return false;
+                return (a.column || null) === (b.column || null) && !!a.asc === !!b.asc;
+            }
+
+            function applySort(sort) {
+                if (sort && isValidSortColumn(sort.column)) {
+                    currentSort = {
+                        column: normalizeSortColumn(sort.column),
+                        asc: !!sort.asc
+                    };
+                } else {
+                    currentSort = { column: null, asc: true };
+                }
+            }
+
+            function applyDefaultSort() {
+                applySort(getDefaultSort());
+            }
 
             container.addEventListener("input", (e) => {
                 const input = e.target;
@@ -1300,7 +1751,7 @@ $global:GLOBALJavaScript_Table = @'
 
             // Sort
             if (view.sort) {
-                const sortCol = columns.find(k => k.toLowerCase() === view.sort.column.toLowerCase());
+                const sortCol = normalizeSortColumn(view.sort.column);
                 if (sortCol) {
                     currentSort.column = sortCol;
                     currentSort.asc = view.sort.direction.toLowerCase() !== "desc";
@@ -1324,6 +1775,7 @@ $global:GLOBALJavaScript_Table = @'
             if (key === "AR") return "App Registrations";
             if (key === "CAP") return "Conditional Access Policies";
             if (key === "PIM") return "PIM";
+            if (key === "PIMGroups") return "PIM Groups";
             if (key === "RoleEntra") return "Role Assignments Entra ID";
             if (key === "RoleAz") return "Role Assignments Azure IAM";
             if (key === "AgentIdentities") return "Agent Identities";
@@ -1357,13 +1809,15 @@ $global:GLOBALJavaScript_Table = @'
             return (tempDiv.textContent || tempDiv.innerText || "").trim();
             }
 
-            // Extract GUID + visible text from "<a href=#GUID>Text</a>"
+            // Extract anchor target + visible text from "<a href=#target>Text</a>".
+            // Some reports use non-GUID synthetic detail ids such as policy ids or
+            // composite keys, so do not restrict this to GUID-only anchors.
             function extractAnchorIdAndText(cellValue) {
             if (cellValue == null) return { id: "", text: "" };
             const s = String(cellValue);
 
-            // Normal reports: <a href=#GUID>...</a>
-            const m = s.match(/<a\s+href=#([a-f0-9-]{36})[^>]*>(.*?)<\/a>/i);
+            // Normal reports: <a href=#target>...</a>
+            const m = s.match(/<a\s+href=#([^\s>]+)[^>]*>(.*?)<\/a>/i);
             if (m) return { id: m[1], text: stripHtmlToText(m[2]) };
 
             // Fallback: treat as plain text
@@ -1396,10 +1850,10 @@ $global:GLOBALJavaScript_Table = @'
                 columnFilters = {};
                 hiddenColumns = new Set();
                 defaultHidden.forEach(col => hiddenColumns.add(col));
-                currentSort = { column: "Risk", asc: false };
+                applyDefaultSort();
                 filterData();
                 createColumnSelector();
-                history.replaceState(null, "", window.location.pathname);
+                if (window.location.protocol !== "file:") history.replaceState(null, "", window.location.pathname);
             });
 
             // Build grouped items HTML
@@ -1446,7 +1900,7 @@ $global:GLOBALJavaScript_Table = @'
                     const view = views.find(v => v.id ? v.id === btn.dataset.id : v.label === btn.dataset.label);
                     if (view) {
                         applyPredefinedView(view);
-                        if (view.id) history.replaceState(null, "", "?view=" + view.id);
+                        if (view.id && window.location.protocol !== "file:") history.replaceState(null, "", "?view=" + view.id);
                     }
                     modal.classList.add("hidden");
                 });
@@ -1480,11 +1934,8 @@ $global:GLOBALJavaScript_Table = @'
             rightSection.className = "right-section";
 
             // Page size selector
-            const pageSizeLabel = document.createElement("label");
-            pageSizeLabel.textContent = "Rows per page:";
-            pageSizeLabel.style.fontSize = "14px";
-            pageSizeLabel.appendChild(pageSizeSelector);
-            leftSection.appendChild(pageSizeLabel);
+            const pageSizeWrapper = container.querySelector(".page-size-wrapper") || pageSizeSelector;
+            leftSection.appendChild(pageSizeWrapper);
 
             // Column toggle menu
             const columnWrapper = document.createElement("div");
@@ -1507,7 +1958,7 @@ $global:GLOBALJavaScript_Table = @'
 
             container.insertBefore(toolbar, wrapper);
 
-            shareBtn.onclick = () => {
+            shareBtn.onclick = (event) => {
                 const url = new URL(window.location.href);
                 url.search = "";
 
@@ -1529,13 +1980,15 @@ $global:GLOBALJavaScript_Table = @'
                 url.searchParams.set("columns", visibleCols.join(","));
 
                 // Add sort info
-                if (currentSort.column) {
+                const defaultSort = getDefaultSort();
+                if (isValidSortColumn(currentSort.column) && !sortEquals(currentSort, defaultSort)) {
                     url.searchParams.set("sort", currentSort.column);
                     url.searchParams.set("sortDir", currentSort.asc ? "asc" : "desc");
                 }
 
                 // Copy to clipboard
-                navigator.clipboard.writeText(url.toString()).then(() => {
+                const copyValue = (event && (event.ctrlKey || event.metaKey)) ? url.search : url.toString();
+                navigator.clipboard.writeText(copyValue).then(() => {
                     showToast("View (Filter, Columns, Sorting) link copied to clipboard");
                 }).catch(err => {
                     console.error("Clipboard write failed", err);
@@ -1579,7 +2032,16 @@ $global:GLOBALJavaScript_Table = @'
                 const sortIcon = isSorted
                     ? `<span style="font-size: 12px;"> ${currentSort.asc ? "\u{25B2}" : "\u{25BC}"}</span>`
                     : "";
-                html += `<th data-col="${col}" title="${tooltip}">${col}${sortIcon}</th>`;
+                const colLower = col.toLowerCase();
+                const isCopyable = colLower.includes("displayname") || colLower.includes("warnings") ||
+                    colLower === "role" || colLower === "principal" || colLower === "scope" ||
+                    colLower === "namelink" || colLower === "apipermissiondescription" ||
+                    colLower.startsWith("upn") || colLower.includes("scoperesolved") ||
+                    colLower === "name" || colLower.endsWith("name");
+                const copyBtn = isCopyable
+                    ? `<span class="copy-col-btn" data-copy-col="${col}" title="Copy column values">\u{1F4CB}</span>`
+                    : "";
+                html += `<th data-col="${col}" title="${tooltip}">${col}${sortIcon}${copyBtn}</th>`;
             });
             html += '</tr><tr>';
             visibleCols.forEach(col => {
@@ -1599,6 +2061,7 @@ $global:GLOBALJavaScript_Table = @'
                         columnHeader === undefined || // no matching header (cell without header)
                         columnHeaderLower.includes("displayname") ||
                         columnHeaderLower.includes("warnings") ||
+                        columnHeaderLower === "group" ||
                         columnHeaderLower === "role" ||
                         columnHeaderLower === "principal" ||
                         columnHeaderLower === "scope" ||
@@ -1629,6 +2092,21 @@ $global:GLOBALJavaScript_Table = @'
                     sortData();
                     renderTable();
                 };
+            });
+
+            // Copy column buttons
+            container.querySelectorAll("thead tr:first-child th .copy-col-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const col = btn.getAttribute("data-copy-col");
+                    const values = filteredData
+                        .map(row => stripHtmlToText(String(row[col] ?? "")))
+                        .filter(v => v !== "");
+                    navigator.clipboard.writeText(values.join("\n")).then(() => {
+                        btn.textContent = "\u2713";
+                        setTimeout(() => { btn.textContent = "\u{1F4CB}"; }, 1500);
+                    });
+                });
             });
 
             renderPagination();
@@ -1684,7 +2162,9 @@ $global:GLOBALJavaScript_Table = @'
         function renderInfo(start, end) {
             const shownStart = filteredData.length === 0 ? 0 : start + 1;
             const shownEnd = Math.min(end, filteredData.length);
-            infoBox.textContent = `Showing ${shownStart}-${shownEnd} of ${filteredData.length} entries`;
+            const isFiltered = filteredData.length < data.length;
+            infoBox.textContent = `Showing ${shownStart}-${shownEnd} of ${filteredData.length} entries` +
+                (isFiltered ? ` (filtered from ${data.length})` : "");
         }
 
         window.goToPage = function (page) {
@@ -1997,6 +2477,18 @@ $global:GLOBALJavaScript_Table = @'
             });
         }
 
+        // Apply responsive column profile when no explicit column or view override is present.
+        // Evaluated once at load time — not re-evaluated on resize.
+        if (!urlParams.columns && !urlParams.view) {
+            const profileColumns = getResponsiveProfile(manifest && manifest.currentReportKey);
+            if (profileColumns && profileColumns.length > 0) {
+                const visibleSet = new Set(profileColumns.map(v => v.toLowerCase()));
+                hiddenColumns = new Set(columns.filter(col => !visibleSet.has(col.toLowerCase())));
+                defaultHidden.forEach(col => hiddenColumns.add(col)); // ensure defaultHidden columns stay hidden regardless of profile content
+                responsiveProfileApplied = true;
+            }
+        }
+
         //Apply filters based on GET parameters
         const lowerKeys = rowLowerKeyMap;
 
@@ -2020,17 +2512,17 @@ $global:GLOBALJavaScript_Table = @'
 
         //Apply sort based on GET parameters
         if (urlParams.sort) {
-            const sortCol = lowerKeys[urlParams.sort.toLowerCase()];
+            const sortCol = normalizeSortColumn(urlParams.sort);
             const sortDir = (urlParams.sortDir || "asc").toLowerCase();
 
             if (sortCol) {
                 currentSort.column = sortCol;
                 currentSort.asc = sortDir !== "desc";
+            } else {
+                applyDefaultSort();
             }
         } else {
-            //Default sort: Risk (descending)
-            currentSort.column = "Risk";
-            currentSort.asc = false;
+            applyDefaultSort();
         }
  
         // Init
@@ -2439,6 +2931,203 @@ $global:GLOBALJavaScript_Table = @'
             if (toggleExpandBtn) {
                 toggleExpandBtn.addEventListener('click', toggleAll);
             }
+
+            // Detail full-text search
+            const searchInput    = document.getElementById('details-search');
+            const searchClearBtn = document.getElementById('details-search-clear');
+            const scopeBtns      = document.querySelectorAll('.detail-scope-toggle .scope-btn');
+
+            if (searchInput && searchClearBtn && scopeBtns.length &&
+                typeof window.__syncDetailsForCurrentPage === "function") {
+
+                window.__detailSearchMode = "current";
+
+                // Capture IDs already rendered by the pre-DOMContentLoaded __pendingDetailIds call,
+                // which ran before the wrapper was installed and couldn't update lastSyncedDetailIds.
+                const _objectContainer = document.getElementById('object-container');
+                window.__lastSyncedDetailIds = _objectContainer
+                    ? Array.from(_objectContainer.querySelectorAll('details'))
+                          .map(d => d.id).filter(Boolean)
+                    : [];
+
+                const _origSync = window.__syncDetailsForCurrentPage;
+
+                // Reusable detached element for HTML stripping — created once, shared across all calls.
+                const _stripEl = document.createElement('div');
+
+                // Recursively collect all primitive values from an object as lowercase strings.
+                // Used so that ^, $, = operators match against individual field values
+                // rather than the full JSON blob. HTML is stripped so that link-wrapped
+                // values (e.g. <a href="...">GlobalAdministrator</a>) match correctly.
+                function extractDetailValues(obj) {
+                    function stripHtml(str) {
+                        _stripEl.innerHTML = str;
+                        return _stripEl.textContent || _stripEl.innerText || '';
+                    }
+                    const values = [];
+                    function walk(val) {
+                        if (val === null || val === undefined) return;
+                        if (typeof val === 'string') {
+                            const text = val.includes('<') ? stripHtml(val) : val;
+                            values.push(text.toLowerCase());
+                            return;
+                        }
+                        if (typeof val === 'number' || typeof val === 'boolean') {
+                            values.push(String(val).toLowerCase());
+                            return;
+                        }
+                        if (Array.isArray(val)) { val.forEach(walk); return; }
+                        if (typeof val === 'object') { Object.values(val).forEach(walk); }
+                    }
+                    walk(obj);
+                    return values;
+                }
+
+                // Match a single object against a query using the same operator syntax
+                // as the main table column filters:
+                //   ||   OR between terms
+                //   &&   AND between terms
+                //   !    negation prefix (e.g. !disabled, !^svc)
+                //   =    exact value match against any field
+                //   ^    starts-with match against any field
+                //   $    ends-with match against any field
+                //   (plain text)  substring match anywhere in the JSON
+                function matchesDetailSearch(obj, query) {
+                    const q = query.trim();
+                    if (!q) return true;
+
+                    if (q.includes('||')) {
+                        return q.split('||').some(part => matchesDetailSearch(obj, part.trim()));
+                    }
+                    if (q.includes('&&')) {
+                        return q.split('&&').map(p => p.trim()).filter(Boolean)
+                                .every(part => matchesDetailSearch(obj, part));
+                    }
+
+                    const lower = q.toLowerCase();
+                    const jsonStr = JSON.stringify(obj).toLowerCase();
+
+                    // Operators that are meaningful per-field: =, ^, $  (with optional ! prefix)
+                    const opMatch = lower.match(/^(!?)([=\^$])\s*(.+)$/);
+                    if (opMatch) {
+                        const [, negate, op, filterStr] = opMatch;
+                        const vals = extractDetailValues(obj);
+                        let result = false;
+                        if (op === '=') result = vals.some(v => v === filterStr);
+                        if (op === '^') result = vals.some(v => v.startsWith(filterStr));
+                        if (op === '$') result = vals.some(v => v.endsWith(filterStr));
+                        return negate ? !result : result;
+                    }
+
+                    // ! without a positional operator: must not contain anywhere in JSON
+                    if (lower.startsWith('!') && lower.length > 1) {
+                        return !jsonStr.includes(lower.slice(1));
+                    }
+
+                    // Default: substring anywhere in the full JSON
+                    return jsonStr.includes(lower);
+                }
+
+                function filterIds(pool, query) {
+                    return pool.filter(id => {
+                        const obj = window.__objectsById && window.__objectsById.get(id);
+                        return obj && matchesDetailSearch(obj, query);
+                    });
+                }
+
+                function updateSearchClear() {
+                    searchClearBtn.style.display = searchInput.value.trim() ? "inline-block" : "none";
+                }
+
+                function updateSearchModeBtn() {
+                    scopeBtns.forEach(btn => {
+                        btn.classList.toggle("active", btn.dataset.scope === window.__detailSearchMode);
+                    });
+                }
+
+                function runDetailSearch() {
+                    const query  = searchInput.value.trim();
+                    const infoEl = document.getElementById('details-info');
+                    updateSearchClear();
+
+                    if (!query) {
+                        _origSync(window.__lastSyncedDetailIds);
+                        return;
+                    }
+
+                    const pool = window.__detailSearchMode === "global"
+                        ? (window.__objectsById ? Array.from(window.__objectsById.keys()) : [])
+                        : window.__lastSyncedDetailIds;
+
+                    const matchingIds = filterIds(pool, query);
+                    _origSync(matchingIds);
+
+                    if (infoEl) {
+                        infoEl.textContent = matchingIds.length + " of " + pool.length + " match";
+                    }
+                }
+
+                // Intercept table-driven sync to track current IDs and handle active searches
+                window.__syncDetailsForCurrentPage = (ids) => {
+                    const uniqueIds = Array.isArray(ids) ? Array.from(new Set(ids.map(String))) : [];
+                    window.__lastSyncedDetailIds = uniqueIds;
+
+                    // Table navigation while global search is active: clear search, revert to current view
+                    if (searchInput.value.trim() && window.__detailSearchMode === "global") {
+                        searchInput.value = "";
+                        window.__detailSearchMode = "current";
+                        updateSearchModeBtn();
+                        updateSearchClear();
+                        _origSync(uniqueIds);
+                        return;
+                    }
+
+                    // Re-apply current-mode search against the updated id set
+                    if (searchInput.value.trim() && window.__detailSearchMode === "current") {
+                        const matchingIds = filterIds(uniqueIds, searchInput.value.trim());
+                        _origSync(matchingIds);
+                        const infoEl = document.getElementById('details-info');
+                        if (infoEl) infoEl.textContent = matchingIds.length + " of " + uniqueIds.length + " match";
+                        return;
+                    }
+
+                    _origSync(uniqueIds);
+                };
+
+                let searchDebounce = null;
+                searchInput.addEventListener("input", () => {
+                    clearTimeout(searchDebounce);
+                    searchDebounce = setTimeout(runDetailSearch, 300);
+                });
+
+                searchClearBtn.addEventListener("click", () => {
+                    searchInput.value = "";
+                    window.__detailSearchMode = "current";
+                    updateSearchModeBtn();
+                    runDetailSearch();
+                });
+
+                scopeBtns.forEach(btn => {
+                    btn.addEventListener("click", () => {
+                        window.__detailSearchMode = btn.dataset.scope;
+                        updateSearchModeBtn();
+                        runDetailSearch();
+                    });
+                });
+
+                // Help popover toggle
+                const helpBtn     = document.querySelector('.details-search-help-btn');
+                const helpPopover = document.querySelector('.details-search-help-popover');
+                if (helpBtn && helpPopover) {
+                    helpBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        helpPopover.classList.toggle('hidden');
+                    });
+                    document.addEventListener('click', () => {
+                        helpPopover.classList.add('hidden');
+                    });
+                }
+            }
         });
 
         //Toast displayed when copy the current view
@@ -2474,7 +3163,7 @@ $global:GLOBALJavaScript_Table = @'
 
             const isDark = document.body.classList.contains("dark-mode");
 
-            const redIfTrueHeaders = new Set(['Foreign', 'Inactive', 'PIM', 'Dynamic', 'SecurityEnabled', 'OnPrem', 'Conditions', 'IsBuiltIn', 'IsPrivileged', 'SAML', 'Agent', 'ActivatedViaPIM']);
+            const redIfTrueHeaders = new Set(['Foreign', 'ForeignAgent', 'Inactive', 'PIM', 'Dynamic', 'SecurityEnabled', 'OnPrem', 'Conditions', 'IsBuiltIn', 'IsPrivileged', 'SAML', 'Agent', 'ActivatedViaPIM']);
             const redIfFalseHeaders = new Set(['AppLock', 'MfaCap', 'Protected', 'Enabled', 'RoleAssignable', 'ActivationMFA', 'ActivationAuthContext', 'ActivationApproval', 'ActiveAssignMFA', 'EligibleExpiration', 'ActiveExpiration', 'ActivationJustification', 'ActivationTicketing', 'ActiveAssignJustification', 'AlertAssignEligible', 'AlertAssignActive', 'AlertActivation']);
             const redIfContent = new Set(['all', 'alltrusted', 'report-only', 'disabled', 'public', 'guest', 'customrole', 'active', 'tier-0', 'tier-1', 'tier-2']);
             const redIfContentHeaders = new Set(['IncUsers', 'IncResources', 'IncNw', 'ExcNw', 'IncPlatforms', 'State', 'Visibility', 'UserType', 'RoleType', 'AssignmentType', 'EntraMaxTier', 'AzureMaxTier', 'PerUserMfa']);
@@ -2835,6 +3524,15 @@ $global:GLOBALJavaScript_Nav = @'
             }
 
             host.appendChild(inner);
+
+            var activeTab = inner.querySelector(".report-tab.active");
+            if (activeTab && activeTab.scrollIntoView) {
+                try {
+                    activeTab.scrollIntoView({ block: "nearest", inline: "center" });
+                } catch (e) {
+                    try { activeTab.scrollIntoView(false); } catch (ignore) {}
+                }
+            }
         }
 
         function buildSectionStrip() {
@@ -2866,6 +3564,14 @@ $global:GLOBALJavaScript_Nav = @'
                 a.className = "section-link";
                 a.href = "#" + h2.id;
                 a.textContent = (h2.textContent || "").replace(/\s+/g, " ").trim();
+
+                // Immediately mark the clicked link active so the indicator
+                // updates on click rather than waiting for the scroll event.
+                a.addEventListener("click", function () {
+                    var all = document.querySelectorAll("#sectionStripInner .section-link");
+                    for (var k = 0; k < all.length; k++) all[k].classList.remove("active");
+                    this.classList.add("active");
+                });
 
                 inner.appendChild(a);
                 added++;
@@ -2966,49 +3672,29 @@ $global:GLOBALJavaScript_Nav = @'
                 if (!document.getElementById("helpModalOverlay")) {
                     var modalOverlay = document.createElement("div");
                     modalOverlay.id = "helpModalOverlay";
-                    modalOverlay.style.position = "fixed";
-                    modalOverlay.style.top = "0";
-                    modalOverlay.style.left = "0";
-                    modalOverlay.style.width = "100vw";
-                    modalOverlay.style.height = "100vh";
-                    modalOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.6)";
-                    modalOverlay.style.display = "none";
-                    modalOverlay.style.zIndex = "9999";
-                    modalOverlay.style.justifyContent = "center";
-                    modalOverlay.style.alignItems = "center";
+                    modalOverlay.className = "help-modal-overlay";
 
                     var modalContent = document.createElement("div");
                     modalContent.id = "helpModalContent";
-                    modalContent.style.background = "var(--nav-link-bg)";
-                    modalContent.style.color = "var(--nav-link-text)";
-                    modalContent.style.padding = "24px";
-                    modalContent.style.borderRadius = "12px";
-                    modalContent.style.maxWidth = "800px";
-                    modalContent.style.width = "90%";
-                    modalContent.style.boxShadow = "0 8px 16px rgba(0,0,0,0.4)";
-                    modalContent.style.fontSize = "15px";
-                    modalContent.style.lineHeight = "1.6";
-                    modalContent.style.position = "relative";
+                    modalContent.className = "help-modal-content";
 
-                    // Paste your existing help HTML here unchanged:
                     modalContent.innerHTML = `
-                    <h2 style="margin-top: 0;">How to Use This Report</h2>
+                    <h2>How to Use This Report</h2>
                     <strong>General</strong>
-                    <ul style="margin-top: 6px;">
-                        <li>Click the \u2699\uFE0F <strong>Columns</strong> button to show or hide specific columns.
+                    <ul>
+                        <li>Click the \u2699\uFE0F <strong>Columns</strong> button to show or hide specific columns.</li>
                         <li>Click \u{1F4BE} <strong>Export CSV</strong> to download the currently visible data as a CSV file.</li>
                         <li>Click \u{1F441} <strong>Share View</strong> to copy filters, sorting, and column selection as a shareable link.</li>
                         <li>Click \uD83E\uDDF0 <strong>Preset Views</strong> to apply preconfigured filters and column selections.</li>
                         <li>Click \uD83D\uDD01 <strong>Reset View</strong> to reset the view to the default.</li>
                         <li>Click on object names to jump to detailed information, even across reports.<br>
-                        Links look like this: <a href="#" onclick="return false;" style="pointer-events: none;">Example Link</a></li>
+                        Links look like this: <a href="#" class="help-example-link" onclick="return false;">Example Link</a></li>
                         <li>When navigating within the report, use the browser's back button to return.</li>
-                        <li>Browser search can locate content even within collapsed <em>details</em> sections.</li>
                         <li>Some table header fields display helper text on mouse hover.</li>
-                        <li>Sort data by clicking any table header.
+                        <li>Sort data by clicking any table header.</li>
                     </ul>
                     <strong>Filtering</strong>
-                    <ul style="margin-top: 6px;">
+                    <ul>
                         <li>If no operator is specified, filtering defaults to <em>contains</em>.</li>
                         <li>Use <code>=</code> for an exact match.</li>
                         <li>Use <code>^</code> for <em>starts with</em> (e.g., <code>^Mallory</code>).</li>
@@ -3022,7 +3708,7 @@ $global:GLOBALJavaScript_Nav = @'
                         <li>The <strong>DisplayName</strong> column includes the object's ID (hidden), allowing filtering by ID.</li>
                     </ul>
                     <strong>Rating</strong>
-                    <ul style="margin-top: 6px;">
+                    <ul>
                         <li><strong>Impact</strong>: Represents the amount or severity of permission the object has.</li>
                         <li><strong>Likelihood</strong>: Represents how easily the object can be influenced or how strongly it is protected.</li>
                         <li><strong>Risk</strong>: Calculated as: <em>Impact x Likelihood = Risk</em>.</li>
@@ -3035,7 +3721,7 @@ $global:GLOBALJavaScript_Nav = @'
                         </li> 
                     </ul>
                     \u{1F4D6} More information in the <a href="https://github.com/CompassSecurity/EntraFalcon">GitHub README</a><br>
-                        <button id="closeHelpModal" style="margin-top: 16px; padding: 6px 12px; font-size: 14px; border-radius: 4px; border: 1px solid #aaa; cursor: pointer;">\u2716 Close</button>
+                    <button id="closeHelpModal" class="help-modal-close" type="button">\u2716 Close</button>
                     `;
 
                     modalOverlay.appendChild(modalContent);
@@ -3043,21 +3729,21 @@ $global:GLOBALJavaScript_Nav = @'
 
                     modalOverlay.addEventListener("click", function (e) {
                         if (e.target === modalOverlay || e.target.id === "closeHelpModal") {
-                            modalOverlay.style.display = "none";
+                            modalOverlay.classList.remove("show");
                         }
                     });
 
                     document.addEventListener("keydown", function (e) {
-                        var isVisible = modalOverlay.style.display === "flex";
+                        var isVisible = modalOverlay.classList.contains("show");
                         if (e.key === "Escape" && isVisible) {
-                            modalOverlay.style.display = "none";
+                            modalOverlay.classList.remove("show");
                         }
                     });
                 }
 
                 helpBtn.addEventListener("click", function () {
                     var overlay = document.getElementById("helpModalOverlay");
-                    if (overlay) overlay.style.display = "flex";
+                    if (overlay) overlay.classList.add("show");
                 });
             }
         }
@@ -3071,7 +3757,7 @@ $global:GLOBALJavaScript_Nav = @'
             } catch (e) {
                 raw = "";
             }
-            var n = parseInt(String(raw).trim(), 10);
+            var n = parseFloat(String(raw).trim());
             return isNaN(n) ? 120 : n;
         }
 
@@ -3081,9 +3767,18 @@ $global:GLOBALJavaScript_Nav = @'
 
             var activeId = "";
             var headings = document.querySelectorAll("h2[id]");
-            for (var i = 0; i < headings.length; i++) {
-            var rect = headings[i].getBoundingClientRect();
-            if (rect.top <= getNavOffset()) activeId = headings[i].id;
+
+            // At the bottom of the page the last section can be too short to ever
+            // cross the threshold — in that case force it active.
+            var atBottom = (window.innerHeight + Math.round(window.scrollY))
+                           >= document.documentElement.scrollHeight - 4;
+            if (atBottom && headings.length) {
+                activeId = headings[headings.length - 1].id;
+            } else {
+                for (var i = 0; i < headings.length; i++) {
+                    var rect = headings[i].getBoundingClientRect();
+                    if (rect.top <= getNavOffset() + 2) activeId = headings[i].id;
+                }
             }
 
             for (var j = 0; j < links.length; j++) {
@@ -3250,6 +3945,7 @@ $global:GLOBALJavaScript_Nav = @'
 
 # CSS for formating the table
 $global:GLOBALCss = @"
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Ctext%20y='.9em'%20font-size='90'%3E%F0%9F%A6%85%3C/text%3E%3C/svg%3E">
 <style>
     /* ======== Shared Styles ======== */
     html {
@@ -3314,6 +4010,27 @@ $global:GLOBALCss = @"
         z-index: 2;
     }
 
+    .copy-col-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        opacity: 0;
+        font-size: 9px;
+        cursor: pointer;
+        padding: 1px 2px;
+        border-radius: 2px;
+        transition: opacity 0.15s;
+        user-select: none;
+    }
+
+    thead tr:first-child th:hover .copy-col-btn {
+        opacity: 0.65;
+    }
+
+    .copy-col-btn:hover {
+        opacity: 1 !important;
+    }
+
     #mainTableContainer {
         padding: 0px 16px 5px 0px;
         max-width: fit-content;
@@ -3330,6 +4047,8 @@ $global:GLOBALCss = @"
         justify-content: space-between;
         width: 100%;
         margin: 15px 0;
+        gap: 12px 16px;
+        flex-wrap: wrap;
     }
 
     .toolbar .left-section,
@@ -3337,21 +4056,94 @@ $global:GLOBALCss = @"
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .toolbar .right-section {
+        margin-left: auto;
+    }
+
+    .page-size-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        white-space: nowrap;
     }
 
     .info-box {
         font-size: 14px;
         white-space: nowrap;
+        max-width: 100%;
     }
 
-    .toolbar select,
+    @media (max-width: 900px) {
+        .toolbar .left-section,
+        .toolbar .right-section {
+            width: 100%;
+        }
+
+        .toolbar .right-section {
+            margin-left: 0;
+            justify-content: flex-start;
+        }
+
+        .info-box {
+            white-space: normal;
+        }
+    }
+
     .toolbar button,
-    select,
     button {
         padding: 6px 10px;
         font-size: 14px;
         border-radius: 4px;
         border: 1px solid;
+    }
+
+    .toolbar select,
+    select {
+        padding: 6px 10px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid;
+    }
+
+    .page-size-wrapper {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+        border: 1px solid;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .page-size-icon {
+        padding: 6px 5px 6px 10px;
+        font-size: 14px;
+        pointer-events: none;
+    }
+
+    .page-size-wrapper select {
+        appearance: none;
+        -webkit-appearance: none;
+        border: none;
+        border-radius: 0;
+        padding: 6px 28px 6px 4px;
+        font-size: 14px;
+        background: transparent;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .page-size-wrapper::after {
+        content: "\25BC";
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 10px;
+        pointer-events: none;
     }
 
     #paginationControls {
@@ -3395,14 +4187,16 @@ $global:GLOBALCss = @"
     .details-toolbar {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin: 10px 0;
-        gap: 12px;
+        margin: 12px 0;
+        gap: 10px;
+        padding: 0 0 8px 0;
+        border-bottom: 1px solid;
     }
 
     .details-info {
-        font-size: 14px;
+        font-size: 13px;
         white-space: nowrap;
+        margin-left: auto;
     }
     .column-toggle-wrapper {
         position: relative;
@@ -3496,10 +4290,110 @@ $global:GLOBALCss = @"
 
     #toggle-expand {
         border-radius: 4px;
-        padding: 6px 12px;
-        margin: 10px 0;
+        padding: 5px 10px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .details-search-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 600px;
+        min-width: 280px;
+    }
+
+    .details-search-box {
+        position: relative;
+        display: flex;
+        flex: 1;
+        min-width: 0;
+    }
+
+    #details-search {
+        flex: 1;
+        padding: 4px 28px 4px 8px;
+        font-size: 13px;
+        border-radius: 4px;
+        border: 1px solid;
+        min-width: 0;
+    }
+
+    .details-search-help-btn {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 1px solid;
+        background: transparent;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .details-search-help-popover {
+        position: absolute;
+        left: 0;
+        top: calc(100% + 6px);
+        width: min(400px, 90vw);
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid;
+        z-index: 100;
+        font-size: 12px;
+    }
+
+    .details-search-help-popover.hidden {
+        display: none;
+    }
+
+    .details-search-help-popover .search-help-title {
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .details-search-help-popover .search-help-list {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+    .details-search-help-popover .search-help-list li {
+        margin: 2px 0;
+    }
+
+    #details-search-clear {
+        padding: 4px 8px;
+        font-size: 13px;
+        border-radius: 4px;
+        border: 1px solid;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .detail-scope-toggle {
+        display: flex;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid;
+        white-space: nowrap;
+    }
+
+    .detail-scope-toggle .scope-btn {
+        padding: 4px 10px;
+        font-size: 13px;
+        border: none;
+        border-radius: 0;
+        cursor: pointer;
+    }
+
+    .detail-scope-toggle .scope-btn + .scope-btn {
+        border-left: 1px solid;
     }
 
     code {
@@ -3507,6 +4401,67 @@ $global:GLOBALCss = @"
         border-radius: 4px;
         font-family: Consolas, monospace;
         font-size: 90%;
+    }
+
+    .help-modal-overlay {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        display: none;
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+    }
+
+    .help-modal-overlay.show {
+        display: flex;
+    }
+
+    .help-modal-content {
+        background: var(--nav-link-bg);
+        color: var(--nav-link-text);
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 800px;
+        width: min(90vw, 800px);
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        font-size: 15px;
+        line-height: 1.6;
+        position: relative;
+        box-sizing: border-box;
+    }
+
+    @supports (height: 100dvh) {
+        .help-modal-content {
+            max-height: calc(100dvh - 48px);
+        }
+    }
+
+    .help-modal-content h2 {
+        margin-top: 0;
+    }
+
+    .help-modal-content ul {
+        margin-top: 6px;
+    }
+
+    .help-example-link {
+        pointer-events: none;
+    }
+
+    .help-modal-close {
+        margin-top: 16px;
+        padding: 6px 12px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #aaa;
+        cursor: pointer;
     }
 
     .preset-modal {
@@ -3679,19 +4634,22 @@ $global:GLOBALCss = @"
     }
 
     body.dark-mode select,
-    body.dark-mode button {
+    body.dark-mode button,
+    body.dark-mode .page-size-wrapper {
         background-color: #2a2a2a;
         color: #e0e0e0;
         border-color: #555;
     }
 
     body.dark-mode select:hover,
-    body.dark-mode button:hover {
+    body.dark-mode button:hover,
+    body.dark-mode .page-size-wrapper:hover {
         background-color: #3a3a3a;
     }
 
     body.dark-mode select:focus,
-    body.dark-mode button:focus {
+    body.dark-mode button:focus,
+    body.dark-mode .page-size-wrapper:focus {
         outline: none;
         border-color: #888;
         box-shadow: 0 0 4px #888;
@@ -3708,6 +4666,10 @@ $global:GLOBALCss = @"
         border: 1px solid #444;
     }
 
+    body.dark-mode .details-toolbar {
+        border-color: #2a2a2a;
+    }
+
     body.dark-mode #toggle-expand {
         background-color: #333;
         color: #E0E0E0;
@@ -3717,6 +4679,63 @@ $global:GLOBALCss = @"
     body.dark-mode #toggle-expand:hover {
         background-color: #444;
         border-color: #888;
+    }
+
+    body.dark-mode #details-search {
+        background: #2a2a2a;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+
+    body.dark-mode #details-search::placeholder {
+        color: #666;
+    }
+
+    body.dark-mode #details-search-clear {
+        background: #2a2a2a;
+        color: #e0e0e0;
+        border-color: #555;
+    }
+
+    body.dark-mode #details-search-clear:hover {
+        background: #3a3a3a;
+    }
+
+    body.dark-mode .details-search-help-btn {
+        border-color: rgba(255,255,255,0.28);
+        color: #aaa;
+    }
+
+    body.dark-mode .details-search-help-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: #e0e0e0;
+    }
+
+    body.dark-mode .details-search-help-popover {
+        background: #1e1e1e;
+        border-color: #444;
+        color: #e0e0e0;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+
+    body.dark-mode .detail-scope-toggle {
+        border-color: #555;
+    }
+
+    body.dark-mode .detail-scope-toggle .scope-btn {
+        background: #2a2a2a;
+        color: #999;
+        border-color: #555;
+    }
+
+    body.dark-mode .detail-scope-toggle .scope-btn:hover:not(.active) {
+        background: #333;
+        color: #ccc;
+    }
+
+    body.dark-mode .detail-scope-toggle .scope-btn.active {
+        background: #1e3448;
+        color: #8ab8e0;
     }
 
     body.dark-mode {
@@ -3805,19 +4824,22 @@ $global:GLOBALCss = @"
     }
 
     body.light-mode select,
-    body.light-mode button {
+    body.light-mode button,
+    body.light-mode .page-size-wrapper {
         background-color: #f4f4f4;
         color: #000;
         border-color: #ccc;
     }
 
     body.light-mode select:hover,
-    body.light-mode button:hover {
+    body.light-mode button:hover,
+    body.light-mode .page-size-wrapper:hover {
         background-color: #e0e0e0;
     }
 
     body.light-mode select:focus,
-    body.light-mode button:focus {
+    body.light-mode button:focus,
+    body.light-mode .page-size-wrapper:focus {
         outline: none;
         border-color: #666;
         box-shadow: 0 0 4px #aaa;
@@ -3835,6 +4857,10 @@ $global:GLOBALCss = @"
         color: #000;
     }
 
+    body.light-mode .details-toolbar {
+        border-color: #ddd;
+    }
+
     body.light-mode #toggle-expand {
         background-color: rgb(231, 229, 229);
         color: #000;
@@ -3844,6 +4870,63 @@ $global:GLOBALCss = @"
     body.light-mode #toggle-expand:hover {
         background-color: #e0e0e0;
         border-color: #888;
+    }
+
+    body.light-mode #details-search {
+        background: #f4f4f4;
+        color: #000;
+        border-color: #ccc;
+    }
+
+    body.light-mode #details-search::placeholder {
+        color: #999;
+    }
+
+    body.light-mode #details-search-clear {
+        background: #f4f4f4;
+        color: #000;
+        border-color: #ccc;
+    }
+
+    body.light-mode #details-search-clear:hover {
+        background: #e0e0e0;
+    }
+
+    body.light-mode .details-search-help-btn {
+        border-color: rgba(0,0,0,0.25);
+        color: #888;
+    }
+
+    body.light-mode .details-search-help-btn:hover {
+        background: rgba(0,0,0,0.07);
+        color: #444;
+    }
+
+    body.light-mode .details-search-help-popover {
+        background: #fff;
+        border-color: #ccc;
+        color: #222;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    body.light-mode .detail-scope-toggle {
+        border-color: #ccc;
+    }
+
+    body.light-mode .detail-scope-toggle .scope-btn {
+        background: #f4f4f4;
+        color: #888;
+        border-color: #ccc;
+    }
+
+    body.light-mode .detail-scope-toggle .scope-btn:hover:not(.active) {
+        background: #e8e8e8;
+        color: #444;
+    }
+
+    body.light-mode .detail-scope-toggle .scope-btn.active {
+        background: #ddeeff;
+        color: #1a4a7a;
     }
 
     body.light-mode {
@@ -3864,135 +4947,146 @@ $global:GLOBALCss = @"
 
     /* Fixed nav stack */
     #nav-stack{
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 2000;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 2000;
+        box-shadow: 0 6px 22px rgba(0,0,0,0.08);
     }
 
-    /* Background behind the whole stack */
-    body.light-mode #nav-stack{ background: rgba(255,255,255,0.70); }
-    body.dark-mode  #nav-stack{ background: rgba(0,0,0,0.45); }
+    body.light-mode #nav-stack{ background: #ffffff; }
+    body.dark-mode  #nav-stack{ background: #181818; }
 
-    /* Header row */
+    /* Compact command bar */
     #report-header{
-    position: relative !important;
-    top: auto !important;
-    display: grid;
-    grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.2fr) auto;
-    gap: 12px;
-    align-items: center;
-    padding: 10px 14px;
-    border-bottom: 1px solid rgba(0,0,0,0.18);
-    background: rgba(255,255,255,0.86);
-    backdrop-filter: blur(6px);
-    }
-    body.light-mode #report-header{
-    background: rgba(255,255,255,0.92);
-    border-bottom: 1px solid rgba(0,0,0,0.12);
+        position: relative !important;
+        top: auto !important;
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+        padding: 7px 12px;
+        border-bottom: 1px solid rgba(0,0,0,0.10);
+        background: #ffffff;
     }
     body.dark-mode #report-header{
-    background: rgba(22,22,22,0.86);
-    border-bottom: 1px solid rgba(255,255,255,0.12);
+        background: #181818;
+        border-bottom: 1px solid rgba(255,255,255,0.10);
     }
 
-    .hdr-left{ display:flex; flex-direction:column; gap:4px; min-width: 240px; }
-    .hdr-title{ display:flex; align-items:baseline; gap:10px; }
-    .hdr-name{ font-size: 16px; font-weight: 800; }
+    .hdr-left{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+        min-width: 0;
+    }
+    .hdr-title{
+        display:flex;
+        align-items:baseline;
+        gap:10px;
+        min-width: 0;
+    }
+    .hdr-name{
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 
     .hdr-sub{
-    display:flex;
-    flex-wrap:nowrap;
-    align-items:center;
-    gap:8px;
-    font-size: 12px;
-    opacity: 0.9;
+        display:flex;
+        flex-wrap:nowrap;
+        align-items:center;
+        gap:7px;
+        min-width: 0;
+        font-size: 11.5px;
+        line-height: 1.25;
+        opacity: 0.86;
     }
-    .hdr-meta{ white-space: nowrap; }
-    .hdr-dot{ opacity: 0.55; }
-    @media (max-width: 900px){
-    .hdr-sub{ flex-wrap: wrap; }
+    .hdr-meta{
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
+    .hdr-dot{ opacity: 0.45; }
 
-    .hdr-center{
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-    }
+    .hdr-center{ display:none; }
 
     .hdr-right{
-    display:flex;
-    align-items:center;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+        display:flex;
+        align-items:center;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        min-width: 0;
     }
 
     /* Buttons in header */
     .hdr-btn{
-        height: 32px;
-        padding: 0 10px;
-        font-size: 13px;
+        height: 30px;
+        padding: 0 9px;
+        font-size: 12.5px;
+        font-weight: 600;
         border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.14);
-        background: rgba(255,255,255,0.06);
+        border: 1px solid transparent;
+        background: transparent;
         color: inherit;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        line-height: 32px;
+        justify-content: center;
+        gap: 6px;
+        line-height: 28px;
+        box-sizing: border-box;
+        white-space: nowrap;
     }
-    .hdr-btn:hover{ background: rgba(255,255,255,0.10); }
-
-    /* Make header buttons consistent */
     #hdr-actions button{
-        height: 32px;
-        line-height: 32px;
-        padding: 0 10px;
-        font-size: 13px;
+        height: 30px;
+        line-height: 28px;
+        padding: 0 9px;
+        font-size: 12.5px;
         border-radius: 8px;
         box-sizing: border-box;
     }
 
-
     body.light-mode .hdr-btn{
-    border: 1px solid rgba(0,0,0,0.16);
-    background: rgba(0,0,0,0.03);
+        border-color: rgba(0,0,0,0.14);
+        background: rgba(0,0,0,0.025);
     }
     body.light-mode .hdr-btn:hover{ background: rgba(0,0,0,0.06); }
 
     body.dark-mode .hdr-btn{
-    border: 1px solid rgba(255,255,255,0.14);
-    background: rgba(255,255,255,0.06);
+        border-color: rgba(255,255,255,0.14);
+        background: rgba(255,255,255,0.06);
     }
-    body.dark-mode .hdr-btn:hover{ background: rgba(255,255,255,0.10); }
+    body.dark-mode .hdr-btn:hover{ background: rgba(255,255,255,0.11); }
 
     /* Report tab strip */
     #report-tabstrip{
-    position: relative !important;
-    top: auto !important;
-    z-index: 999;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0,0,0,0.10);
+        position: relative !important;
+        top: auto !important;
+        z-index: 999;
+        border-bottom: 1px solid rgba(0,0,0,0.10);
+        background: #f7faf9;
     }
     body.dark-mode #report-tabstrip{
-    background: rgba(18, 18, 18, 0.92);
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: #202020;
+        border-bottom: 1px solid rgba(255,255,255,0.09);
     }
     .tabstrip-inner{
-    display: flex;
-    gap: 2px;
-    align-items: center;
-    padding: 4px 14px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
+        display: flex;
+        gap: 3px;
+        align-items: center;
+        padding: 4px 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scrollbar-width: thin;
+        white-space: nowrap;
     }
     .tabstrip-inner::-webkit-scrollbar{ height: 8px; }
     .tabstrip-inner::-webkit-scrollbar-thumb{ border-radius: 8px; }
@@ -4000,52 +5094,86 @@ $global:GLOBALCss = @"
     body.dark-mode  .tabstrip-inner::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.18); }
 
     .report-tab{
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 10px;
-    font-size: 13px;
-    letter-spacing: 0.2px;
-    color: inherit;
-    text-decoration: none;
-    white-space: nowrap;
-    border-bottom: 2px solid transparent;
-    border-radius: 6px;
-    background: transparent;
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 9px;
+        font-size: 12.5px;
+        font-weight: 600;
+        letter-spacing: 0;
+        color: inherit;
+        text-decoration: none;
+        white-space: nowrap;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        background: transparent;
+        flex: 0 0 auto;
     }
-    body.light-mode .report-tab:hover{ background: rgba(0,0,0,0.05); }
-    body.dark-mode  .report-tab:hover{ background: rgba(255,255,255,0.06); }
+    body.light-mode .report-tab:hover{
+        background: #eef3f2;
+        border-color: rgba(0,0,0,0.10);
+    }
+    body.dark-mode .report-tab:hover{
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.12);
+    }
 
     body.light-mode .report-tab.active{
-    border-bottom-color: rgba(0,0,0,0.45);
-    background: rgba(0,0,0,0.03);
+        background: #e2f1ef;
+        border-color: #9fcfca;
+        color: #004f4b;
     }
     body.dark-mode .report-tab.active{
-    border-bottom-color: rgba(255,255,255,0.55);
-    background: rgba(255,255,255,0.04);
+        background: rgba(220,225,225,0.14);
+        border-color: rgba(220,225,225,0.30);
+        color: #f4f6f6;
     }
 
     /* Warnings badge */
     .hdr-warn-btn{ position: relative; }
+    body.light-mode .hdr-warn-btn{
+        border-color: rgba(160, 90, 0, 0.28);
+        background: rgba(160, 90, 0, 0.08);
+        color: #704000;
+    }
+    body.dark-mode .hdr-warn-btn{
+        border-color: rgba(255, 180, 80, 0.28);
+        background: rgba(255, 180, 80, 0.10);
+        color: #ffdca8;
+    }
     .hdr-warn-count{
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 6px;
-    margin-left: 8px;
-    border-radius: 999px;
-    font-size: 12px;
-    line-height: 18px;
-    font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        margin-left: 2px;
+        border-radius: 8px;
+        font-size: 11.5px;
+        line-height: 18px;
+        font-weight: 800;
     }
     body.light-mode .hdr-warn-count{
-    background: rgba(160, 90, 0, 0.16);
-    border: 1px solid rgba(160, 90, 0, 0.35);
+        background: rgba(160, 90, 0, 0.14);
+        border: 1px solid rgba(160, 90, 0, 0.30);
     }
     body.dark-mode .hdr-warn-count{
-    background: rgba(255, 180, 80, 0.14);
-    border: 1px solid rgba(255, 180, 80, 0.28);
+        background: rgba(255, 180, 80, 0.14);
+        border: 1px solid rgba(255, 180, 80, 0.28);
+    }
+
+    @media (max-width: 900px){
+        #report-header{
+            grid-template-columns: 1fr;
+            align-items: start;
+        }
+        .hdr-right{
+            justify-content: flex-start;
+        }
+        .hdr-sub{
+            flex-wrap: wrap;
+        }
     }
 
     /* Warnings drawer */
@@ -4129,45 +5257,117 @@ $global:GLOBALCss = @"
 
 
 
-    /* Section strip (micro) */
+    /* Section strip */
     #section-strip{
-    position: relative !important;
-    top: auto !important;
-    z-index: 998;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-bottom: none;
+        position: relative !important;
+        top: auto !important;
+        z-index: 998;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
     }
-    body.light-mode #section-strip{ background: rgba(255,255,255,0.88); }
-    body.dark-mode  #section-strip{ background: rgba(18,18,18,0.80); }
+    body.light-mode #section-strip{ background: #ffffff; }
+    body.dark-mode  #section-strip{
+        background: #181818;
+        border-bottom-color: rgba(255,255,255,0.08);
+    }
 
     .section-strip-inner{
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding: 2px 14px;
-    scrollbar-width: thin;
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        padding: 4px 12px;
+        scrollbar-width: thin;
     }
     .section-strip-inner::-webkit-scrollbar{ height: 6px; }
-    .section-strip-inner::-webkit-scrollbar-thumb{ border-radius: 999px; }
+    .section-strip-inner::-webkit-scrollbar-thumb{ border-radius: 8px; }
     body.light-mode .section-strip-inner::-webkit-scrollbar-thumb{ background: rgba(0,0,0,0.18); }
     body.dark-mode  .section-strip-inner::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.18); }
 
     .section-link{
-    text-decoration: none;
-    font-size: 11.5px;
-    opacity: 0.72;
-    padding: 2px 0;
-    border-bottom: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 0 8px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 11.5px;
+        font-weight: 600;
+        opacity: 0.82;
+        flex: 0 0 auto;
     }
-    .section-link:hover{ opacity: 0.95; }
+    .section-link:hover{ opacity: 1; }
+    body.light-mode .section-link:hover{
+        background: #eef3f2;
+        border-color: rgba(0,0,0,0.10);
+    }
+    body.dark-mode .section-link:hover{
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.12);
+    }
     .section-link.active{
-    opacity: 1;
-    border-bottom-color: currentColor;
+        opacity: 1;
     }
-    .section-sep{ opacity: 0.22; }
+    body.light-mode .section-link.active{
+        background: #e2f1ef;
+        border-color: #9fcfca;
+        color: #004f4b;
+    }
+    body.dark-mode .section-link.active{
+        background: rgba(220,225,225,0.14);
+        border-color: rgba(220,225,225,0.30);
+        color: #f4f6f6;
+    }
+    .section-sep{ display:none; }
+
+    @media (min-width: 901px) and (max-width: 1600px) {
+        .tabstrip-inner {
+            flex-wrap: wrap;
+            align-content: center;
+            gap: 3px;
+            padding: 4px 8px;
+            overflow-x: visible;
+            overflow-y: visible;
+            white-space: normal;
+            scrollbar-width: none;
+        }
+
+        .tabstrip-inner::-webkit-scrollbar {
+            display: none;
+        }
+
+        .report-tab {
+            min-height: 26px;
+            padding: 0 7px;
+            font-size: 11.5px;
+            border-radius: 7px;
+        }
+
+        .section-strip-inner {
+            flex-wrap: wrap;
+            align-content: center;
+            gap: 4px;
+            padding: 4px 8px;
+            overflow-x: visible;
+            overflow-y: visible;
+            white-space: normal;
+            scrollbar-width: none;
+        }
+
+        .section-strip-inner::-webkit-scrollbar {
+            display: none;
+        }
+
+        .section-link {
+            min-height: 22px;
+            padding: 0 7px;
+            font-size: 11px;
+            border-radius: 7px;
+            white-space: nowrap;
+        }
+    }
 
 
     /* Make native form popups prefer the active color scheme */
@@ -4179,13 +5379,8 @@ $global:GLOBALCss = @"
         color-scheme: light;
     }
 
-
     body.light-mode .section-link{ color: rgba(0,0,0,0.88); }
     body.dark-mode  .section-link{ color: rgba(255,255,255,0.88); }
-    body.light-mode .section-link.active{ color: rgba(0,0,0,0.95); }
-    body.dark-mode  .section-link.active{ color: rgba(255,255,255,0.95); }
-    body.light-mode .section-sep{ color: rgba(0,0,0,0.55); }
-    body.dark-mode  .section-sep{ color: rgba(255,255,255,0.55); }
 
     /* Make anchors work with the new fixed stack */
     h2{ scroll-margin-top: var(--report-header-offset, 120px); }
@@ -4438,7 +5633,7 @@ function Test-NonWindowsAuthFlowCompatibility {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)]
-        [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken")]
+        [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken", "ServicePrincipal")]
         [string]$AuthFlow = "BroCi",
 
         [Parameter(Mandatory = $false)]
@@ -4450,7 +5645,7 @@ function Test-NonWindowsAuthFlowCompatibility {
         return $true
     }
 
-    $nonWindowsSupportedFlows = @("DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken")
+    $nonWindowsSupportedFlows = @("DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken", "ServicePrincipal")
     if ($nonWindowsSupportedFlows -contains $AuthFlow) {
         return $true
     }
@@ -4462,6 +5657,7 @@ function Test-NonWindowsAuthFlowCompatibility {
         "ManualCode" = "Auth Code + Manual Code Flow"
         "BroCiManualCode" = "BroCi + Manual Code Flow"
         "BroCiToken" = "BroCi with Token"
+        "ServicePrincipal" = "Client Credentials (App Only)"
     }
 
     $flowHint = @{
@@ -4471,6 +5667,7 @@ function Test-NonWindowsAuthFlowCompatibility {
         "ManualCode" = "-AuthFlow ManualCode"
         "BroCiManualCode" = "-AuthFlow BroCiManualCode"
         "BroCiToken" = '-AuthFlow BroCiToken -BroCiToken "<refresh_token>"'
+        "ServicePrincipal" = '-AuthFlow ServicePrincipal -SPClientId "<id>" -SPClientSecret "<secret>"'
     }
 
     $selectedDisplay = if ($flowDisplay.ContainsKey($AuthFlow)) { $flowDisplay[$AuthFlow] } else { $AuthFlow }
@@ -4487,6 +5684,649 @@ function Test-NonWindowsAuthFlowCompatibility {
     Write-Host "[i] See '$ReadmePath' for more details."
 
     return $false
+}
+
+function Export-EntraFalconSecurityFindingsJson {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$OutputFolder,
+
+        [Parameter(Mandatory = $true)]
+        [string]$StartTimestamp,
+
+        [Parameter(Mandatory = $true)]
+        [object]$CurrentTenant,
+
+        [Parameter(Mandatory = $true)]
+        [object]$SecurityFindings
+    )
+
+    function ConvertTo-FindingsExportText {
+        param(
+            [object]$Value,
+            [string]$Fallback = ""
+        )
+
+        $text = if ($null -eq $Value) { "" } else { [string]$Value }
+        $text = $text.Trim()
+        if ($text) { return $text }
+        return $Fallback
+    }
+
+    function ConvertTo-FindingsExportFilePart {
+        param(
+            [object]$Value,
+            [string]$Fallback
+        )
+
+        $text = ConvertTo-FindingsExportText -Value $Value -Fallback $Fallback
+        $text = $text -replace '[<>:"/\\|?*\x00-\x1F]', '_'
+        $text = $text -replace '\s+', '_'
+        $text = $text -replace '_+', '_'
+        $text = $text.Trim('_')
+        if ([string]::IsNullOrWhiteSpace($text)) { return $Fallback }
+        return $text
+    }
+
+    function ConvertFrom-FindingsExportHtml {
+        param([object]$Value)
+
+        if ($null -eq $Value) { return "" }
+
+        $html = [string]$Value
+        if ([string]::IsNullOrWhiteSpace($html)) { return "" }
+
+        $normalized = $html `
+            -replace '\r\n?', "`n" `
+            -replace '<\s*br\s*/?>', "`n" `
+            -replace '<\s*/p\s*>', "`n`n" `
+            -replace '<\s*p[^>]*>', "" `
+            -replace '<\s*li[^>]*>', "- " `
+            -replace '<\s*/li\s*>', "`n" `
+            -replace '<\s*/(?:ul|ol)\s*>', "`n" `
+            -replace '<\s*(?:ul|ol)[^>]*>', "" `
+            -replace '<\s*/div\s*>', "`n" `
+            -replace '<\s*div[^>]*>', ""
+
+        $text = $normalized -replace '<[^>]+>', ""
+        $text = [System.Net.WebUtility]::HtmlDecode($text)
+        $text = $text `
+            -replace ([string][char]0x00A0), " " `
+            -replace "[ `t]+`n", "`n" `
+            -replace "`n[ `t]+", "`n" `
+            -replace "`n{3,}", "`n`n"
+
+        return $text.Trim()
+    }
+
+    function Split-FindingsExportMultiValue {
+        param(
+            [string]$Key,
+            [object]$Value
+        )
+
+        $text = (ConvertTo-FindingsExportText -Value $Value) -replace '\r\n?', "`n"
+        $text = $text.Trim()
+        if (-not $text) { return @() }
+
+        $lineParts = @($text -split "`n+" | ForEach-Object {
+            ($_ -replace '^\s*-\s*', '').Trim()
+        } | Where-Object { $_ })
+        if ($lineParts.Count -gt 1) { return $lineParts }
+
+        $keyHint = [regex]::IsMatch((ConvertTo-FindingsExportText -Value $Key), 'owner|owners|member|members|role|roles|permission|permissions|group|groups|warning|warnings|api permissions', [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+
+        if ($keyHint -and $text.Contains(';')) {
+            $semicolonParts = @($text -split '\s*;\s*' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+            if ($semicolonParts.Count -gt 1) { return $semicolonParts }
+        }
+
+        if ($keyHint -and $text.Contains(',') -and -not $text.Contains(':')) {
+            $commaParts = @($text -split '\s*,\s*' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+            if ($commaParts.Count -gt 1) { return $commaParts }
+        }
+
+        return @($text)
+    }
+
+    function Get-FindingsExportPropertyNames {
+        param([object]$Object)
+
+        if ($null -eq $Object) { return @() }
+        if ($Object -is [System.Collections.IDictionary]) { return @($Object.Keys | ForEach-Object { [string]$_ }) }
+        return @($Object.PSObject.Properties | ForEach-Object { $_.Name })
+    }
+
+    function Get-FindingsExportPropertyValue {
+        param(
+            [object]$Object,
+            [string]$Name
+        )
+
+        if ($null -eq $Object -or [string]::IsNullOrWhiteSpace($Name)) { return $null }
+        if ($Object -is [System.Collections.IDictionary]) {
+            if ($Object.Contains($Name)) { return $Object[$Name] }
+            return $null
+        }
+        $property = $Object.PSObject.Properties[$Name]
+        if ($null -eq $property) { return $null }
+        return $property.Value
+    }
+
+    function Test-FindingsExportObjectValue {
+        param([object]$Value)
+
+        if ($null -eq $Value) { return $false }
+        if ($Value -is [string]) { return $false }
+        if ($Value -is [System.Collections.IDictionary]) { return $true }
+        if ($Value -is [System.ValueType]) { return $false }
+        if ($Value -is [System.Collections.IEnumerable]) { return $false }
+        return ($null -ne $Value.PSObject -and $Value.PSObject.Properties.Count -gt 0)
+    }
+
+    function ConvertTo-FindingsExportJsonString {
+        param([object]$Value)
+
+        if ($null -eq $Value) { return "" }
+        return ($Value | ConvertTo-Json -Depth 20 -Compress)
+    }
+
+    function ConvertTo-FindingsExportScalarValue {
+        param([object]$Value)
+
+        if ($null -eq $Value) { return $null }
+        if ($Value -is [byte] -or
+            $Value -is [sbyte] -or
+            $Value -is [int16] -or
+            $Value -is [uint16] -or
+            $Value -is [int] -or
+            $Value -is [uint32] -or
+            $Value -is [long] -or
+            $Value -is [uint64]) {
+            return $Value
+        }
+        if ($Value -is [float] -or $Value -is [double] -or $Value -is [decimal]) {
+            $number = [decimal]$Value
+            if ($number -ge [decimal][long]::MinValue -and $number -le [decimal][long]::MaxValue -and [decimal]::Truncate($number) -eq $number) {
+                return [long]$number
+            }
+            return $Value
+        }
+        return $Value
+    }
+
+    function ConvertTo-FindingsExportAffectedObject {
+        param([object]$Object)
+
+        if (-not (Test-FindingsExportObjectValue -Value $Object)) { return $Object }
+
+        $clean = [ordered]@{}
+        foreach ($key in Get-FindingsExportPropertyNames -Object $Object) {
+            if (-not $key -or $key[0] -eq '_') { continue }
+
+            $value = Get-FindingsExportPropertyValue -Object $Object -Name $key
+
+            if ($key -eq "Warnings") {
+                if ($null -eq $value) {
+                    $clean[$key] = ""
+                } elseif ($value -is [string]) {
+                    $clean[$key] = ConvertFrom-FindingsExportHtml -Value $value
+                } elseif ($value -is [System.Collections.IEnumerable] -and -not ($value -is [System.Collections.IDictionary])) {
+                    $warningParts = New-Object System.Collections.Generic.List[string]
+                    foreach ($entry in @($value)) {
+                        if ($null -eq $entry) { continue }
+                        if ($entry -is [string]) {
+                            $warningParts.Add((ConvertFrom-FindingsExportHtml -Value $entry))
+                        } elseif (Test-FindingsExportObjectValue -Value $entry) {
+                            $warningParts.Add((ConvertTo-FindingsExportJsonString -Value (ConvertTo-FindingsExportAffectedObject -Object $entry)))
+                        } else {
+                            $warningParts.Add([string]$entry)
+                        }
+                    }
+                    $clean[$key] = ($warningParts -join " / ")
+                } elseif (Test-FindingsExportObjectValue -Value $value) {
+                    $clean[$key] = ConvertTo-FindingsExportJsonString -Value (ConvertTo-FindingsExportAffectedObject -Object $value)
+                } else {
+                    $clean[$key] = [string]$value
+                }
+                continue
+            }
+
+            if ($null -eq $value) {
+                $clean[$key] = ""
+            } elseif ($value -is [string]) {
+                $plainText = ConvertFrom-FindingsExportHtml -Value $value
+                $split = @(Split-FindingsExportMultiValue -Key $key -Value $plainText)
+                $clean[$key] = if ($split.Count -gt 1) { $split } elseif ($split.Count -eq 1) { $split[0] } else { "" }
+            } elseif ($value -is [System.Collections.IEnumerable] -and -not ($value -is [System.Collections.IDictionary])) {
+                $entries = @($value)
+                if ($entries.Count -eq 0) {
+                    $clean[$key] = @()
+                    continue
+                }
+
+                $objectEntries = @($entries | Where-Object { Test-FindingsExportObjectValue -Value $_ })
+                if ($objectEntries.Count -eq $entries.Count) {
+                    $clean[$key] = @($objectEntries | ForEach-Object { ConvertTo-FindingsExportAffectedObject -Object $_ })
+                    continue
+                }
+
+                $scalarEntries = New-Object System.Collections.Generic.List[object]
+                foreach ($entry in $entries) {
+                    if ($null -eq $entry) { continue }
+                    if ($entry -is [string]) {
+                        foreach ($part in @(Split-FindingsExportMultiValue -Key $key -Value (ConvertFrom-FindingsExportHtml -Value $entry))) {
+                            $scalarEntries.Add($part)
+                        }
+                    } elseif (Test-FindingsExportObjectValue -Value $entry) {
+                        $scalarEntries.Add((ConvertTo-FindingsExportJsonString -Value (ConvertTo-FindingsExportAffectedObject -Object $entry)))
+                    } else {
+                        $scalarEntries.Add([string]$entry)
+                    }
+                }
+                $clean[$key] = if ($scalarEntries.Count -gt 1) { @($scalarEntries) } elseif ($scalarEntries.Count -eq 1) { $scalarEntries[0] } else { "" }
+            } elseif (Test-FindingsExportObjectValue -Value $value) {
+                $clean[$key] = ConvertTo-FindingsExportAffectedObject -Object $value
+            } else {
+                $clean[$key] = ConvertTo-FindingsExportScalarValue -Value $value
+            }
+        }
+
+        return [pscustomobject]$clean
+    }
+
+    function Get-FindingsExportAffectedSortKey {
+        param(
+            [object[]]$Objects,
+            [string]$RequestedSortKey
+        )
+
+        $allColumns = New-Object System.Collections.Generic.List[string]
+        $seenColumns = @{}
+
+        foreach ($object in @($Objects)) {
+            foreach ($column in Get-FindingsExportPropertyNames -Object $object) {
+                if (-not $column -or $seenColumns.ContainsKey($column)) { continue }
+                $seenColumns[$column] = $true
+                $allColumns.Add($column)
+            }
+        }
+
+        $visibleColumns = @($allColumns | Where-Object { $_ -and $_[0] -ne '_' })
+        $sortKey = ""
+        if (-not [string]::IsNullOrWhiteSpace($RequestedSortKey)) {
+            $desired = $RequestedSortKey.ToLowerInvariant()
+            $sortKey = [string](@($allColumns | Where-Object { $_.ToLowerInvariant() -eq $desired } | Select-Object -First 1))
+            if (-not $sortKey) {
+                $sortKey = [string](@($allColumns | Where-Object { $_.ToLowerInvariant().Contains($desired) } | Select-Object -First 1))
+            }
+        }
+        if (-not $sortKey -and $visibleColumns.Count -gt 0) { $sortKey = [string]$visibleColumns[0] }
+        return $sortKey
+    }
+
+    function Compare-FindingsExportAffectedObject {
+        param(
+            [object]$A,
+            [object]$B,
+            [string]$SortKey,
+            [int]$SortDirection
+        )
+
+        $av = (ConvertFrom-FindingsExportHtml -Value (ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $A -Name $SortKey))).Trim()
+        $bv = (ConvertFrom-FindingsExportHtml -Value (ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $B -Name $SortKey))).Trim()
+        $aMissing = ($av -eq "" -or $av -eq "?")
+        $bMissing = ($bv -eq "" -or $bv -eq "?")
+        if ($aMissing -and -not $bMissing) { return 1 }
+        if (-not $aMissing -and $bMissing) { return -1 }
+
+        $aNumber = 0.0
+        $bNumber = 0.0
+        $aIsNumber = [regex]::IsMatch($av, '^-?\d+(\.\d+)?$')
+        $bIsNumber = [regex]::IsMatch($bv, '^-?\d+(\.\d+)?$')
+        if ($aIsNumber -and $bIsNumber) {
+            $aNumber = [double]::Parse($av, [System.Globalization.CultureInfo]::InvariantCulture)
+            $bNumber = [double]::Parse($bv, [System.Globalization.CultureInfo]::InvariantCulture)
+            if ($aNumber -lt $bNumber) { return (-1 * $SortDirection) }
+            if ($aNumber -gt $bNumber) { return (1 * $SortDirection) }
+            return 0
+        }
+
+        $textCompare = [string]::Compare($av.ToLowerInvariant(), $bv.ToLowerInvariant(), [System.StringComparison]::Ordinal)
+        if ($textCompare -lt 0) { return (-1 * $SortDirection) }
+        if ($textCompare -gt 0) { return (1 * $SortDirection) }
+        return 0
+    }
+
+    function Sort-FindingsExportAffectedObjects {
+        param(
+            [object[]]$Objects,
+            [string]$SortKey,
+            [object]$SortDirection
+        )
+
+        $list = [System.Collections.Generic.List[object]]::new()
+        foreach ($object in @($Objects)) {
+            if ($null -ne $object) { $list.Add($object) }
+        }
+        if ($list.Count -eq 0) { return ,@() }
+        if ($list.Count -eq 1) { return ,@($list[0]) }
+
+        $direction = 1
+        if ($SortDirection -is [string]) {
+            if ($SortDirection.ToLowerInvariant() -eq "desc") { $direction = -1 }
+        } elseif ($SortDirection -eq -1) {
+            $direction = -1
+        }
+
+        $resolvedSortKey = Get-FindingsExportAffectedSortKey -Objects @($list) -RequestedSortKey $SortKey
+        if ([string]::IsNullOrWhiteSpace($resolvedSortKey)) { return @($list) }
+
+        $indexedList = [System.Collections.Generic.List[object]]::new()
+        for ($i = 0; $i -lt $list.Count; $i++) {
+            $indexedList.Add([pscustomobject]@{
+                Index = $i
+                Value = $list[$i]
+            })
+        }
+
+        $indexedList.Sort([System.Comparison[object]]{
+            param($a, $b)
+            $result = Compare-FindingsExportAffectedObject -A $a.Value -B $b.Value -SortKey $resolvedSortKey -SortDirection $direction
+            if ($result -ne 0) { return $result }
+            return ($a.Index - $b.Index)
+        })
+
+        return ,@($indexedList | ForEach-Object { $_.Value })
+    }
+
+    function Normalize-FindingsExportSeverity {
+        param([object]$Value)
+
+        $number = 0.0
+        if (-not [double]::TryParse([string]$Value, [System.Globalization.NumberStyles]::Any, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$number)) {
+            return 0
+        }
+        if ($number -lt 0 -or $number -gt 4) { return 0 }
+        return [int][math]::Floor($number)
+    }
+
+    function Normalize-FindingsExportStatus {
+        param([object]$Value)
+
+        $status = (ConvertTo-FindingsExportText -Value $Value).ToLowerInvariant()
+        if ($status -eq "vulnerable") { return "Vulnerable" }
+        if ($status -eq "skipped") { return "Skipped" }
+        return "NotVulnerable"
+    }
+
+    function ConvertTo-FindingsExportFinding {
+        param([object]$Finding)
+
+        $confidence = Get-FindingsExportPropertyValue -Object $Finding -Name "Confidence"
+        if ([string]::IsNullOrWhiteSpace([string]$confidence)) {
+            $confidence = Get-FindingsExportPropertyValue -Object $Finding -Name "Certainty"
+        }
+
+        $rawAffectedObjects = Get-FindingsExportPropertyValue -Object $Finding -Name "AffectedObjects"
+        $affectedObjects = if ($null -eq $rawAffectedObjects) {
+            @()
+        } elseif (Test-FindingsExportObjectValue -Value $rawAffectedObjects) {
+            @($rawAffectedObjects)
+        } elseif ($rawAffectedObjects -is [System.Collections.IEnumerable] -and -not ($rawAffectedObjects -is [string]) -and -not ($rawAffectedObjects -is [System.Collections.IDictionary])) {
+            @($rawAffectedObjects)
+        } else {
+            @()
+        }
+
+        $affectedSortKey = ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "AffectedSortKey")
+        $affectedSortDir = ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "AffectedSortDir")
+        $sortedAffectedObjects = Sort-FindingsExportAffectedObjects -Objects $affectedObjects -SortKey $affectedSortKey -SortDirection $affectedSortDir
+
+        return [pscustomobject][ordered]@{
+            FindingId        = ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "FindingId")
+            Title            = ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Title") -Fallback "Untitled finding"
+            Category         = ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Category") -Fallback "Uncategorized"
+            Severity         = Normalize-FindingsExportSeverity -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Severity")
+            Description      = ConvertFrom-FindingsExportHtml -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Description")
+            Threat           = ConvertFrom-FindingsExportHtml -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Threat")
+            Status           = Normalize-FindingsExportStatus -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Status")
+            Remediation      = ConvertFrom-FindingsExportHtml -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "Remediation")
+            Confidence       = ConvertTo-FindingsExportText -Value $confidence -Fallback "Inconclusive"
+            AffectedObjects  = @(@($sortedAffectedObjects) | Where-Object { $null -ne $_ } | ForEach-Object { ConvertTo-FindingsExportAffectedObject -Object $_ })
+            RelatedReportUrl = ConvertTo-FindingsExportText -Value (Get-FindingsExportPropertyValue -Object $Finding -Name "RelatedReportUrl")
+            AffectedSortKey  = $affectedSortKey
+            AffectedSortDir  = $affectedSortDir
+            Tags             = @()
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $OutputFolder)) {
+        $null = New-Item -Path $OutputFolder -ItemType Directory -Force
+    }
+    $resolvedOutputFolder = (Resolve-Path -LiteralPath $OutputFolder).ProviderPath
+
+    $tenantLabel = if ($CurrentTenant.PSObject.Properties["DisplayName"]) { $CurrentTenant.DisplayName } elseif ($CurrentTenant.PSObject.Properties["FileSafeDisplayName"]) { $CurrentTenant.FileSafeDisplayName } else { "tenant" }
+    $tenantToken = ConvertTo-FindingsExportFilePart -Value $tenantLabel -Fallback "tenant"
+    $timestampToken = ConvertTo-FindingsExportFilePart -Value $StartTimestamp -Fallback "timestamp"
+    $exportPath = Join-Path $resolvedOutputFolder "tenant_findings_all_$($timestampToken)_$($tenantToken).json"
+
+    $findingsArray = @($SecurityFindings)
+    $plainFindings = @($findingsArray | ForEach-Object { ConvertTo-FindingsExportFinding -Finding $_ })
+    $json = ConvertTo-Json -InputObject $plainFindings -Depth 30
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($exportPath, $json, $utf8NoBom)
+
+    try {
+        return (Resolve-Path -LiteralPath $exportPath).Path
+    } catch {
+        return $exportPath
+    }
+}
+
+function Export-EntraFalconDebugObjectDump {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$OutputFolder,
+
+        [Parameter(Mandatory = $true)]
+        [string]$StartTimestamp,
+
+        [Parameter(Mandatory = $true)]
+        [object]$CurrentTenant,
+
+        [Parameter(Mandatory = $false)]
+        [string]$EntraFalconVersion,
+
+        [Parameter(Mandatory = $false)]
+        [object]$TenantDomains,
+
+        [Parameter(Mandatory = $false)]
+        [object]$GlobalAuditSummary,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AllUsersBasicHT,
+
+        [Parameter(Mandatory = $false)]
+        [object]$UserReportState,
+
+        [Parameter(Mandatory = $false)]
+        [object]$Users,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AllGroupsDetails,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AgentObjectBasics,
+
+        [Parameter(Mandatory = $false)]
+        [object]$ServicePrincipalSignInActivityLookup,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AppRoleReferenceCache,
+
+        [Parameter(Mandatory = $false)]
+        [object]$TenantPimForGroupsAssignments,
+
+        [Parameter(Mandatory = $false)]
+        [object]$TenantPimRoleAssignments,
+
+        [Parameter(Mandatory = $false)]
+        [object]$TenantRoleAssignments,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AzureIAMAssignments,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AllCaps,
+
+        [Parameter(Mandatory = $false)]
+        [object]$Devices,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AdminUnitWithMembers,
+
+        [Parameter(Mandatory = $false)]
+        [object]$PimforEntraRoles,
+
+        [Parameter(Mandatory = $false)]
+        [object]$PimforGroups,
+
+        [Parameter(Mandatory = $false)]
+        [object]$EnterpriseApps,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AppRegistrations,
+
+        [Parameter(Mandatory = $false)]
+        [object]$ManagedIdentities,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AgentIdentities,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AgentIdentityBlueprintsPrincipals,
+
+        [Parameter(Mandatory = $false)]
+        [object]$AgentIdentityBlueprints,
+
+        [Parameter(Mandatory = $false)]
+        [object]$SecurityFindings
+    )
+
+    function Get-DebugObjectCount {
+        param([object]$Object)
+
+        if ($null -eq $Object) { return 0 }
+        if ($Object -is [System.Collections.IDictionary]) { return $Object.Count }
+        if ($Object -is [System.Collections.ICollection]) { return $Object.Count }
+        if ($Object -is [System.Collections.IEnumerable] -and -not ($Object -is [string])) { return @($Object).Count }
+        return 1
+    }
+
+    function Get-DebugNestedEntryCount {
+        param([object]$Object)
+
+        if ($null -eq $Object) { return 0 }
+
+        if ($Object -is [System.Collections.IDictionary]) {
+            $count = 0
+            foreach ($value in $Object.Values) {
+                $count += Get-DebugObjectCount -Object $value
+            }
+            return $count
+        }
+
+        return Get-DebugObjectCount -Object $Object
+    }
+
+    function Get-DebugObjectNameFromFileName {
+        param([string]$FileName)
+
+        $name = [System.IO.Path]::GetFileNameWithoutExtension($FileName)
+        return ($name -replace '^\d+_', '')
+    }
+
+    try {
+        $debugDumpFolder = Join-Path $OutputFolder "Debug_ObjectDump"
+        if (-not (Test-Path -LiteralPath $debugDumpFolder)) {
+            $null = New-Item -Path $debugDumpFolder -ItemType Directory -Force
+        }
+        $debugDumpFolderFullPath = (Resolve-Path -LiteralPath $debugDumpFolder).Path
+
+        $debugObjects = [ordered]@{
+            "01_CurrentTenant.clixml"                     = $CurrentTenant
+            "02_TenantDomains.clixml"                     = $TenantDomains
+            "03_GlobalAuditSummary.clixml"                = $GlobalAuditSummary
+            "04_AllUsersBasicHT.clixml"                   = $AllUsersBasicHT
+            "05_UserReportState.clixml"                   = $UserReportState
+            "06_Users.clixml"                             = $Users
+            "07_AllGroupsDetails.clixml"                  = $AllGroupsDetails
+            "08_AgentObjectBasics.clixml"                 = $AgentObjectBasics
+            "09_ServicePrincipalSignInActivityLookup.clixml" = $ServicePrincipalSignInActivityLookup
+            "10_AppRoleReferenceCache.clixml"             = $AppRoleReferenceCache
+            "11_TenantPimForGroupsAssignments.clixml"     = $TenantPimForGroupsAssignments
+            "12_TenantPimRoleAssignments.clixml"          = $TenantPimRoleAssignments
+            "13_TenantRoleAssignments.clixml"             = $TenantRoleAssignments
+            "14_AzureIAMAssignments.clixml"               = $AzureIAMAssignments
+            "15_AllCaps.clixml"                           = $AllCaps
+            "16_Devices.clixml"                           = $Devices
+            "17_AdminUnitWithMembers.clixml"              = $AdminUnitWithMembers
+            "18_PimforEntraRoles.clixml"                  = $PimforEntraRoles
+            "19_PimforGroups.clixml"                      = $PimforGroups
+            "20_EnterpriseApps.clixml"                    = $EnterpriseApps
+            "21_AppRegistrations.clixml"                  = $AppRegistrations
+            "22_ManagedIdentities.clixml"                 = $ManagedIdentities
+            "23_AgentIdentities.clixml"                   = $AgentIdentities
+            "24_AgentIdentityBlueprintsPrincipals.clixml" = $AgentIdentityBlueprintsPrincipals
+            "25_AgentIdentityBlueprints.clixml"           = $AgentIdentityBlueprints
+            "26_SecurityFindings.clixml"                  = $SecurityFindings
+        }
+
+        $summaryProperties = [ordered]@{
+            ExportedAt         = (Get-Date).ToString("s")
+            EntraFalconVersion = $EntraFalconVersion
+            PowerShellVersion  = $PSVersionTable.PSVersion.ToString()
+            HostOS             = Get-EntraFalconHostOs
+            StartTimestamp     = $StartTimestamp
+            TenantDisplayName  = $CurrentTenant.DisplayName
+            TenantId           = $CurrentTenant.Id
+            OutputFolder       = $OutputFolder
+            DumpFolder         = $debugDumpFolderFullPath
+            DumpFormat         = "CLIXML"
+        }
+
+        foreach ($export in $debugObjects.GetEnumerator()) {
+            $objectName = Get-DebugObjectNameFromFileName -FileName $export.Key
+            $summaryProperties["$($objectName)_Count"] = Get-DebugObjectCount -Object $export.Value
+            if ($export.Value -is [System.Collections.IDictionary]) {
+                $summaryProperties["$($objectName)_NestedCount"] = Get-DebugNestedEntryCount -Object $export.Value
+            }
+        }
+
+        $summary = [pscustomobject]$summaryProperties
+        Export-Clixml -InputObject $summary -Path (Join-Path $debugDumpFolder "00_Summary.clixml")
+        $summary | ConvertTo-Json -Depth 6 | Out-File -FilePath (Join-Path $debugDumpFolder "00_Summary.json") -Encoding utf8
+
+        foreach ($export in $debugObjects.GetEnumerator()) {
+            if ($null -eq $export.Value) {
+                continue
+            }
+
+            try {
+                Export-Clixml -InputObject $export.Value -Path (Join-Path $debugDumpFolder $export.Key)
+            } catch {
+                Write-Host "[!] Failed to export debug object '$($export.Key)': $($_.Exception.Message)"
+            }
+        }
+
+        Write-Host "[+] Debug object dump written to $debugDumpFolderFullPath"
+    } catch {
+        Write-Host "[!] Failed to export debug object dump: $($_.Exception.Message)"
+    }
 }
 
 # Check if MS Graph is authenticated; if not, call the function for interactive sign-in
@@ -4544,12 +6384,39 @@ function AuthCheckMSGraph {
     }
     return $result
 }
+#Return a tenant display name variant that is safe to use inside generated file names.
+function ConvertTo-EntraFalconFileNameToken {
+    param(
+        [AllowNull()][string]$Value,
+        [AllowNull()][string]$Fallback
+    )
+
+    $token = "$Value".Trim()
+    $token = $token -replace '[<>:"/\\|?*\x00-\x1F]', '_'
+    $token = $token.Trim().TrimEnd([char[]]@('.', ' '))
+    $token = $token -replace '_{2,}', '_'
+
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        $token = "$Fallback".Trim()
+    }
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        $token = "Tenant"
+    }
+
+    return $token
+}
+
 #Get basic tenant info
 function Get-OrgInfo {
     $QueryParameters = @{
-        '$select' = "Id,DisplayName"
+        '$select' = "Id,DisplayName,onPremisesSyncEnabled,onPremisesLastSyncDateTime"
     }
     $OrgInfo = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/organization" -QueryParameters $QueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+    foreach ($tenant in @($OrgInfo)) {
+        $fileSafeDisplayName = ConvertTo-EntraFalconFileNameToken -Value $tenant.DisplayName -Fallback $tenant.Id
+        $tenant | Add-Member -NotePropertyName FileSafeDisplayName -NotePropertyValue $fileSafeDisplayName -Force
+        $tenant | Add-Member -NotePropertyName FileSafeDisplayNameEncoded -NotePropertyValue ([System.Uri]::EscapeDataString($fileSafeDisplayName)) -Force
+    }
     return $OrgInfo
 }
 
@@ -4677,6 +6544,7 @@ function Get-AgentObjectBasics {
     $agentObjectBasics = @{
         AgentIdentities = @{}
         AgentIdentityBlueprintsPrincipals = @{}
+        AgentIdentityBlueprints = @{}
     }
 
     $agentIdentityQueryParameters = @{
@@ -4728,7 +6596,28 @@ function Get-AgentObjectBasics {
         }
     }
 
-    Write-Log -Level Verbose -Message "Got $($agentObjectBasics.AgentIdentities.Count) agent identities and $($agentObjectBasics.AgentIdentityBlueprintsPrincipals.Count) agent identity blueprint principals"
+    $blueprintQueryParameters = @{
+        '$select' = "Id,AppId,DisplayName,isDisabled,createdDateTime"
+        '$top' = $ApiTop
+    }
+    $blueprintsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri '/applications/microsoft.graph.agentIdentityBlueprint' -QueryParameters $blueprintQueryParameters -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+    foreach ($item in @($blueprintsRaw)) {
+        $agentObjectBasics.AgentIdentityBlueprints[$item.Id] = [pscustomobject]@{
+            Id                   = $item.Id
+            AppId                = $item.AppId
+            DisplayName          = $item.DisplayName
+            Enabled              = -not ($item.isDisabled -eq $true)
+            PublisherName        = '-'
+            Foreign              = $false
+            DefaultMS            = $false
+            ObjectKind           = 'AgentIdentityBlueprint'
+            TargetReport         = 'AgentIdentityBlueprints'
+            ServicePrincipalType = $null
+            CreationDate         = $item.createdDateTime
+        }
+    }
+
+    Write-Log -Level Verbose -Message "Got $($agentObjectBasics.AgentIdentities.Count) agent identities, $($agentObjectBasics.AgentIdentityBlueprintsPrincipals.Count) agent identity blueprint principals and $($agentObjectBasics.AgentIdentityBlueprints.Count) agent identity blueprints"
     return $agentObjectBasics
 }
 
@@ -4741,26 +6630,70 @@ function Get-ServicePrincipalSignInActivityLookup {
 
     $AppLastSignIns = @{}
     $AppLastSignInsRaw = Send-GraphRequest -AccessToken $GLOBALMsGraphAccessToken.access_token -Method GET -Uri "/reports/servicePrincipalSignInActivities" -BetaAPI -QueryParameters @{ '$top' = $ApiTop } -UserAgent $($GlobalAuditSummary.UserAgent.Name)
+    $nowUtc = (Get-Date).ToUniversalTime()
+
+    $getSignInDateInfo = {
+        param([object]$Value)
+
+        $emptyValue = [pscustomobject]@{
+            Display = "-"
+            Days    = "-"
+        }
+
+        if ($null -eq $Value -or [string]::IsNullOrWhiteSpace([string]$Value)) {
+            return $emptyValue
+        }
+
+        try {
+            if ($Value -is [datetime]) {
+                $dateTime = [datetime]$Value
+                if ($dateTime.Kind -eq [DateTimeKind]::Unspecified) {
+                    $dateTime = [datetime]::SpecifyKind($dateTime, [DateTimeKind]::Utc)
+                }
+                $utcDateTime = $dateTime.ToUniversalTime()
+            } else {
+                $dateTimeOffset = [datetimeoffset]::Parse(
+                    [string]$Value,
+                    [Globalization.CultureInfo]::InvariantCulture,
+                    [Globalization.DateTimeStyles]::AssumeUniversal -bor [Globalization.DateTimeStyles]::AdjustToUniversal
+                )
+                $utcDateTime = $dateTimeOffset.UtcDateTime
+            }
+
+            return [pscustomobject]@{
+                Display = $utcDateTime.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", [Globalization.CultureInfo]::InvariantCulture)
+                Days    = (New-TimeSpan -Start $utcDateTime -End $nowUtc).Days
+            }
+        } catch {
+            return $emptyValue
+        }
+    }
 
     foreach ($app in @($AppLastSignInsRaw)) {
         if ([string]::IsNullOrWhiteSpace($app.appId)) { continue }
 
+        $lastSignInInfo = & $getSignInDateInfo $app.lastSignInActivity.lastSignInDateTime
+        $lastSignInAppAsClientInfo = & $getSignInDateInfo $app.applicationAuthenticationClientSignInActivity.lastSignInDateTime
+        $lastSignInAppAsResourceInfo = & $getSignInDateInfo $app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime
+        $lastSignInDelegatedAsClientInfo = & $getSignInDateInfo $app.delegatedClientSignInActivity.lastSignInDateTime
+        $lastSignInDelegatedAsResourceInfo = & $getSignInDateInfo $app.delegatedResourceSignInActivity.lastSignInDateTime
+
         $AppLastSignIns[$app.appId] = @{
             id = $app.appId
-            lastSignIn = if ($app.lastSignInActivity.lastSignInDateTime) {$app.lastSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInDays = if ($app.lastSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.lastSignInActivity.lastSignInDateTime).Days } else { "-" }
+            lastSignIn = $lastSignInInfo.Display
+            lastSignInDays = $lastSignInInfo.Days
 
-            lastSignInAppAsClient = if ($app.applicationAuthenticationClientSignInActivity.lastSignInDateTime) {$app.applicationAuthenticationClientSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInAppAsClientDays = if ($app.applicationAuthenticationClientSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.applicationAuthenticationClientSignInActivity.lastSignInDateTime).Days } else { "-" }
+            lastSignInAppAsClient = $lastSignInAppAsClientInfo.Display
+            lastSignInAppAsClientDays = $lastSignInAppAsClientInfo.Days
 
-            lastSignInAppAsResource = if ($app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime) {$app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInAppAsResourceDays = if ($app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.applicationAuthenticationResourceSignInActivity.lastSignInDateTime).Days } else { "-" }
+            lastSignInAppAsResource = $lastSignInAppAsResourceInfo.Display
+            lastSignInAppAsResourceDays = $lastSignInAppAsResourceInfo.Days
 
-            lastSignInDelegatedAsClient = if ($app.delegatedClientSignInActivity.lastSignInDateTime) {$app.delegatedClientSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInDelegatedAsClientDays = if ($app.delegatedClientSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.delegatedClientSignInActivity.lastSignInDateTime).Days } else { "-" }
+            lastSignInDelegatedAsClient = $lastSignInDelegatedAsClientInfo.Display
+            lastSignInDelegatedAsClientDays = $lastSignInDelegatedAsClientInfo.Days
 
-            lastSignInDelegatedAsResource = if ($app.delegatedResourceSignInActivity.lastSignInDateTime) {$app.delegatedResourceSignInActivity.lastSignInDateTime} else { "-" }
-            lastSignInDelegatedAsResourceDays = if ($app.delegatedResourceSignInActivity.lastSignInDateTime) { (New-TimeSpan -Start $app.delegatedResourceSignInActivity.lastSignInDateTime).Days } else { "-" }
+            lastSignInDelegatedAsResource = $lastSignInDelegatedAsResourceInfo.Display
+            lastSignInDelegatedAsResourceDays = $lastSignInDelegatedAsResourceInfo.Days
         }
     }
 
@@ -4867,6 +6800,12 @@ function Resolve-DirectoryObjectReference {
             if (-not $principals.ContainsKey($normalizedId)) { return $null }
             return $principals[$normalizedId]
         }
+
+        '#microsoft.graph.agentIdentityBlueprint' {
+            $blueprints = if ($AgentObjectBasics.ContainsKey('AgentIdentityBlueprints')) { $AgentObjectBasics.AgentIdentityBlueprints } else { @{} }
+            if (-not $blueprints.ContainsKey($normalizedId)) { return $null }
+            return $blueprints[$normalizedId]
+        }
     }
 
     return $null
@@ -4936,7 +6875,8 @@ function checkSubscriptionNative {
 #Function to perform MSGraph authentication using EntraTokenAid
 function AuthenticationMSGraph {
     if (-not (invoke-EntraFalconAuth -Action Auth -Purpose MainAuth @GLOBALAuthMethods)) {
-        throw "[!] Authentication failed for MainAuth"
+        Write-Log -Level Debug -Message "Authentication failed for MainAuth."
+        return $false
     }
 
     if (AuthCheckMSGraph) {
@@ -5019,7 +6959,7 @@ function Invoke-CheckTokenExpiration ($Object) {
     #write-host "[*] Checking access token expiration... $($Object.Target)"
     $validForMinutes = [Math]::Ceiling((NEW-TIMESPAN -Start (Get-Date) -End $Object.Expiration_time).TotalMinutes)
 
-    #Check if the token is valid for more than 15 minutes
+    #Check if the token is valid for more than 30 minutes
     if ($validForMinutes -ge 30) {
         #write-host "[+] Token is still valid for $validForMinutes minutes"
         $result = $true
@@ -5048,6 +6988,7 @@ $global:GLOBALEntraRoleRating = @{
     "158c047a-c907-4556-b7ef-446551a6b5f7" = 0 #Cloud Application Administrator
     "194ae4cb-b126-40b2-bd5b-6091b380977d" = 0 #Security Administrator
     "db506228-d27e-4b7d-95e5-295956d6615f" = 1 #Agent ID Administrator
+    "d2562ede-74db-457e-a7b6-544e236ebb61" = 1 #AI Administrator
     "d29b2b05-8046-44ba-8758-1e26182fcf32" = 1 #Directory Synchronization Accounts
     "a92aed5d-d78a-4d16-b381-09adb37eb3b0" = 1 #On Premises Directory Sync Account
     "b1be1c3e-b65d-4f19-8427-f6fa0d97feb9" = 1 #Conditional Access Administrator
@@ -5168,6 +7109,7 @@ $global:GLOBALApiPermissionCategorizationList= @{
     "6e85d483-7092-4375-babe-0a94a8213a58" = "High" #UserAuthMethod-Phone.ReadWrite.All
     "4869299f-18c3-40c8-98f2-222657e67db1" = "High" #UserAuthMethod-QR.ReadWrite.All
     "627169a8-8c15-451c-861a-5b80e383de5c" = "High" #UserAuthMethod-TAP.ReadWrite.All
+    "57f1cf28-c0c4-4ec3-9a30-19a2eaaf2f6e" = "Medium" #BitlockerKey.Read.All
     "741f803b-c850-494e-b5df-cde7c675a1ca" = "Medium" #User.ReadWrite.All
     "18a4783c-866b-4cc7-a460-3d5e5662c884" = "Medium" #Application.ReadWrite.OwnedBy
     "6b7d71aa-70aa-4810-a8d9-5d9fb2830017" = "Medium" #Chat.Read.All
@@ -5440,9 +7382,10 @@ function Get-AllAzureIAMAssignmentsNative {
     $url = 'https://management.azure.com/subscriptions?api-version=2022-12-01'
     $subscriptions = @(Send-ApiRequest -Method GET -Uri $url -AccessToken $GLOBALArmAccessToken.access_token -UserAgent $($GlobalAuditSummary.UserAgent.Name) -ErrorAction Stop) | ForEach-Object {
         [PSCustomObject]@{
-            Id          = $_.subscriptionId
-            displayName  = $_.displayName
-            managedByTenants  = $_.managedByTenants
+            Id               = $_.subscriptionId
+            DisplayName      = $_.displayName
+            State            = $_.state
+            ManagedByTenants = $_.managedByTenants
         }
     }
 
@@ -5460,6 +7403,7 @@ function Get-AllAzureIAMAssignmentsNative {
         }
         Write-Log -Level Debug -Message "Subscription $($sub.DisplayName) $($sub.Id) | ManagedByTenants: $managedTenantCount"
     }
+    $global:GLOBALAzureSubscriptionScopeMap = $subscriptionScopeMap
 
     $managementGroupScopeMap = @{}
     try {
@@ -5504,6 +7448,45 @@ function Get-AllAzureIAMAssignmentsNative {
     } catch {
         Write-Log -Level Debug -Message "Management group scope resolution via Resource Graph unavailable. Using scope IDs. Error: $($_.Exception.Message)"
     }
+
+    $subscriptionResourceCounts = @{}
+    try {
+        $body = @{
+            query   = "Resources | summarize Count=count() by subscriptionId"
+            options = @{ resultFormat = "objectArray" }
+        }
+        $resourceCountResponse = Send-ApiRequest -Method POST -Uri $url -AccessToken $GLOBALArmAccessToken.access_token -UserAgent $($GlobalAuditSummary.UserAgent.Name) -Body $body -Silent -ErrorAction Stop
+        $resourceCountRows = @()
+        if ($resourceCountResponse -is [System.Collections.IEnumerable] -and -not ($resourceCountResponse -is [string])) {
+            foreach ($entry in $resourceCountResponse) {
+                if ($entry -and $entry.PSObject.Properties.Name -contains 'data' -and $entry.data) { $resourceCountRows += @($entry.data) }
+                else { $resourceCountRows += @($entry) }
+            }
+        } elseif ($resourceCountResponse -and $resourceCountResponse.PSObject.Properties.Name -contains 'data' -and $resourceCountResponse.data) {
+            $resourceCountRows = @($resourceCountResponse.data)
+        } elseif ($resourceCountResponse) {
+            $resourceCountRows = @($resourceCountResponse)
+        }
+        foreach ($row in $resourceCountRows) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$row.subscriptionId)) {
+                $subscriptionResourceCounts[[string]$row.subscriptionId.ToLowerInvariant()] = [int]$row.Count
+            }
+        }
+        Write-Log -Level Debug -Message "Got resource counts for $($subscriptionResourceCounts.Count) subscriptions"
+    } catch {
+        Write-Log -Level Debug -Message "Resource count query unavailable: $($_.Exception.Message)"
+    }
+
+    $GlobalAuditSummary.Subscriptions.Details = @($subscriptions | ForEach-Object {
+        $resourceCount = $subscriptionResourceCounts[$_.Id.ToLowerInvariant()]
+        [PSCustomObject]@{
+            Id               = $_.Id
+            DisplayName      = $_.DisplayName
+            State            = $_.State
+            ManagedByTenants = if ($null -ne $_.ManagedByTenants) { @($_.ManagedByTenants).Count } else { 0 }
+            Resources        = if ($null -ne $resourceCount) { $resourceCount } else { "-" }
+        }
+    })
 
     # Resolve known scope IDs in ARM paths and keep the original path when no mapping exists.
     function Resolve-AzureIamScopePath {
@@ -6265,7 +8248,7 @@ function Initialize-TenantReportTabs {
         [Parameter(Mandatory)][pscustomobject]$TenantReports
     )
 
-    $tenantNameEscaped = [uri]::EscapeDataString($CurrentTenant.DisplayName)
+    $tenantNameEscaped = $CurrentTenant.FileSafeDisplayNameEncoded
 
     $defs = @(
         @{ Prop = 'Summary';                   Key = 'Summary';    Title = 'Summary';                   File = "_EntraFalconEnumerationSummary_${StartTimestamp}_${tenantNameEscaped}.html" }
@@ -6279,9 +8262,10 @@ function Initialize-TenantReportTabs {
         @{ Prop = 'AgentIdentityBlueprints';   Key = 'AgentIdentityBlueprints'; Title = 'Agent Blueprints'; File = "AgentIdentityBlueprints_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'AgentIdentityBlueprintsPrincipals'; Key = 'AgentIdentityBlueprintsPrincipals'; Title = 'Agent Blueprint Principals'; File = "AgentIdentityBlueprintsPrincipals_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'AgentIdentities';           Key = 'AgentIdentities'; Title = 'Agent Identities';     File = "AgentIdentities_${StartTimestamp}_${tenantNameEscaped}.html" }
-        @{ Prop = 'EntraRoles';                Key = 'RoleEntra';  Title = 'Role Assignments (Entra)';  File = "Role_Assignments_Entra_${StartTimestamp}_${tenantNameEscaped}.html" }
-        @{ Prop = 'AzureRoles';                Key = 'RoleAz';     Title = 'Role Assignments (Azure)';  File = "Role_Assignments_Azure_${StartTimestamp}_${tenantNameEscaped}.html" }
+        @{ Prop = 'EntraRoles';                Key = 'RoleEntra';  Title = 'Roles (Entra)';  File = "Role_Assignments_Entra_${StartTimestamp}_${tenantNameEscaped}.html" }
+        @{ Prop = 'AzureRoles';                Key = 'RoleAz';     Title = 'Roles (Azure)';  File = "Role_Assignments_Azure_${StartTimestamp}_${tenantNameEscaped}.html" }
         @{ Prop = 'PimForEntra';               Key = 'PIM';        Title = 'PIM (Entra)';                File = "PIM_${StartTimestamp}_${tenantNameEscaped}.html" }
+        @{ Prop = 'PimForGroups';              Key = 'PIMGroups';  Title = 'PIM (Groups)';               File = "PIM_Groups_${StartTimestamp}_${tenantNameEscaped}.html" }
     )
 
     $tabs = New-Object System.Collections.Generic.List[object]
@@ -6344,7 +8328,7 @@ function Set-GlobalReportManifest {
     }
 
     $json = $manifest | ConvertTo-Json -Depth 6 -Compress
-    $global:GLOBALReportManifestScript = "<script id=`"report-manifest`" type=`"application/json`">$json</script>"
+    $global:GLOBALReportManifestScript = "<script id=`"report-manifest`" type=`"application/json`">$json</script>`n"
 }
 
 
@@ -6356,18 +8340,36 @@ function Get-PimforGroupsAssignments {
     [CmdletBinding()]
     Param ()
     $ResultAuthCheck = $true
+    $global:GLOBALPimForGroupsHT = @{}
+    $global:GLOBALPimForGroupsResources = @()
+    $global:GLOBALPimForGroupsAssignmentObjects = @()
+    $isBroCiFlow = $false
+    if ($GLOBALAuthMethods -and $GLOBALAuthMethods.ContainsKey("AuthFlow")) {
+        $isBroCiFlow = @("BroCi", "BroCiManualCode", "BroCiToken") -contains [string]$GLOBALAuthMethods.AuthFlow
+    }
+    $isServicePrincipalFlow = ([string]$GLOBALAuthMethods.AuthFlow -eq "ServicePrincipal")
+    $global:GLOBALPimForGroupsPolicySettingsSupported = $isBroCiFlow -or $isServicePrincipalFlow
+    $global:GLOBALPimForGroupsPolicySettingsSkipReason = if ($isBroCiFlow -or $isServicePrincipalFlow) {
+        $null
+    } else {
+        "PIM for Groups settings report requires BroCi authentication because non-BroCi flows do not have the required pre-consented permissions."
+    }
     
-    Write-Host "[*] Trigger interactive authentication for PIM for Groups assessment (skip with -SkipPimForGroups)"
+    Write-Host "[*] Authentication for PIM for Groups assessment (skip with -SkipPimForGroups)"
     if (-not (invoke-EntraFalconAuth -Action Auth -Purpose PimforGroup @GLOBALAuthMethods)) {
         throw "[!] Authentication failed for PimforGroup"
     }
 
+    # /me is not available for app-only tokens. using /organization as a connectivity check instead
+    $authCheckUri = if ($GLOBALAuthMethods.AuthFlow -eq "ServicePrincipal") { '/organization?$select=id' } else { '/me?$select=id' }
     try {
-        $AuthCheck = Send-GraphRequest -AccessToken $GLOBALPimForGroupAccessToken.access_token -Method GET -Uri '/me?$select=id' -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name) -erroraction Stop
+        $AuthCheck = Send-GraphRequest -AccessToken $GLOBALPimForGroupAccessToken.access_token -Method GET -Uri $authCheckUri -BetaAPI -UserAgent $($GlobalAuditSummary.UserAgent.Name) -erroraction Stop
     } catch {
         write-host "[!] Auth error: $($_.Exception.Message -split '\n')"
         $ResultAuthCheck = $false
         $global:GLOBALPimForGroupsChecked = $false
+        $global:GLOBALPimForGroupsPolicySettingsSupported = $false
+        $global:GLOBALPimForGroupsPolicySettingsSkipReason = "PIM for Groups assessment failed during authentication."
     }
 
     if ($ResultAuthCheck) {
@@ -6377,11 +8379,6 @@ function Get-PimforGroupsAssignments {
         #Retrieve Pim Enabled groups. If HTTP 400 assuing error message is "The tenant needs to have Microsoft Entra ID P2 or Microsoft Entra ID Governance license.",
         try {
             #Use alternative Endpoint for BroCI since no SP with pre-consented privieleges PrivilegedAccess.Read(Write).AzureADGroup exists
-            $isBroCiFlow = $false
-            if ($GLOBALAuthMethods.ContainsKey("AuthFlow")) {
-                $isBroCiFlow = @("BroCi", "BroCiManualCode", "BroCiToken") -contains [string]$GLOBALAuthMethods.AuthFlow
-            }
-
             if ($isBroCiFlow) {
                 Write-Host "[*] Retrieve PIM enabled groups (BroCi / using api.azrbac.mspim.azure.com)"
                 $uri = "https://api.azrbac.mspim.azure.com/api/v2/privilegedAccess/aadGroups/resources?`$select=id,displayName&`$top=999"
@@ -6406,6 +8403,7 @@ function Get-PimforGroupsAssignments {
                     displayName  = $_.displayName
                 }
             }
+            $global:GLOBALPimForGroupsResources = @($PimEnabledGroups)
     
             #Stored groups in global HT var to use in groups module
             $global:GLOBALPimForGroupsHT = @{}
@@ -6430,12 +8428,15 @@ function Get-PimforGroupsAssignments {
                 }
                 Write-Host "[*] Get eligible objects for those groups"
                 # Send Batch request
-                $PIMforGroupsAssignments = (Send-GraphBatchRequest -AccessToken $GLOBALPimForGroupAccessToken.access_token -Requests $Requests -BetaAPI -BatchDelay 0.5 -UserAgent $($GlobalAuditSummary.UserAgent.Name)).response.value
+                $PIMforGroupsAssignments = (Send-GraphBatchRequest -AccessToken $GLOBALPimForGroupAccessToken.access_token -Requests $Requests -BetaAPI -BatchDelay 1 -MaxBatchSize 8 -UserAgent $($GlobalAuditSummary.UserAgent.Name)).response.value
+                $global:GLOBALPimForGroupsAssignmentObjects = @($PIMforGroupsAssignments)
                 Write-Host "[+] Got $($PIMforGroupsAssignments.Count) objects eligible for a PIM-enabled group"
                 
             } else {
                 Write-Host "[!] No PIM enabled groups found"
                 $PIMforGroupsAssignments = ""
+                $global:GLOBALPimForGroupsResources = @()
+                $global:GLOBALPimForGroupsAssignmentObjects = @()
             }
         }
     }
@@ -7000,11 +9001,11 @@ function start-InitTasks {
     )
 
     $Global:GlobalAuditSummary = @{
-        Time                   = @{ Start = Get-Date -Format "yyyyMMdd HH:mm"; End = ""}
-        Tenant                 = @{ Name = ""; Id = "" }
+        Time                   = @{ Start = Get-Date -Format "yyyyMMdd HH:mm:ss"; End = ""}
+        Tenant                 = @{ Name = ""; Id = ""; OnPremisesSyncEnabled = $null; OnPremisesLastSyncDateTime = $null }
         EntraFalcon            = @{ Version = "$EntraFalconVersion"; Source = "https://github.com/CompassSecurity/EntraFalcon" }
         TenantLicense          = @{ Name = ""; Level = 0}
-        Subscriptions          = @{ Count = 0 }
+        Subscriptions          = @{ Count = 0; Details = @() }
         UserAgent              = @{ Name = $UserAgent}
         Users                  = @{ Count = 0; Guests = 0; Inactive = 0; Enabled=0; OnPrem=0; MfaCapable=0; SignInActivity = @{ '0-1 month' = 0; '1-2 months' = 0; '2-3 months' = 0; '3-4 months' = 0; '4-5 months' = 0; '5-6 months' = 0; '6+ months' = 0; 'Never' = 0 }}
         Groups                 = @{ Count = 0; M365 = 0; PublicM365 = 0; PimOnboarded = 0; OnPrem = 0}
@@ -7192,7 +9193,7 @@ function invoke-EntraFalconAuth {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $false)]
-        [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken")]
+        [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken", "ServicePrincipal")]
         [string]$AuthFlow = "BroCi",
 
         # Action
@@ -7205,9 +9206,31 @@ function invoke-EntraFalconAuth {
         [ValidateSet("MainAuth", "PimforEntra", "PimforGroup", "Azure", "SecurityFindings")]
         [string]$Purpose,
 
-        #BrociToken
+        # BroCiToken
         [Parameter(Mandatory = $false)]
-        [string]$BroCiToken
+        [string]$BroCiToken,
+
+        # ServicePrincipal credential params
+        [Parameter(Mandatory = $false)]
+        [string]$SPClientId,
+
+        [Parameter(Mandatory = $false)]
+        [string]$SPClientSecret,
+
+        [Parameter(Mandatory = $false)]
+        [string]$SPCertificatePath,
+
+        [Parameter(Mandatory = $false)]
+        [System.Security.SecureString]$SPCertificatePassword,
+
+        [Parameter(Mandatory = $false)]
+        [string]$SPCertificatePemPath,
+
+        [Parameter(Mandatory = $false)]
+        [string]$SPPrivateKeyPemPath,
+
+        [Parameter(Mandatory = $false)]
+        [System.Security.SecureString]$SPPrivateKeyPemPassword
 
     )
 
@@ -7219,12 +9242,19 @@ function invoke-EntraFalconAuth {
     if ($AuthFlow -ne "BroCiToken" -and -not [string]::IsNullOrWhiteSpace($BroCiToken)) {
         throw "Invalid parameter combination: -BroCiToken can only be used with -AuthFlow BroCiToken."
     }
+    if ($AuthFlow -eq "ServicePrincipal" -and [string]::IsNullOrWhiteSpace($SPClientId)) {
+        throw "Invalid parameter combination: -AuthFlow ServicePrincipal requires -SPClientId."
+    }
+    if ($AuthFlow -eq "ServicePrincipal" -and [string]::IsNullOrWhiteSpace($GLOBALAuthParameters['Tenant'])) {
+        throw "ServicePrincipal flow requires a tenant. Use -Tenant."
+    }
 
     $isBroCiFlow = @("BroCi", "BroCiManualCode", "BroCiToken") -contains $AuthFlow
     $authMethodKey = switch ($AuthFlow) {
         "DeviceCode" { "DeviceCode" }
         "ManualCode" { "ManualCode" }
         "BroCiManualCode" { "ManualCode" }
+        "ServicePrincipal" { "ServicePrincipal" }
         default { "AuthCode" }
     }
 
@@ -7257,7 +9287,7 @@ function invoke-EntraFalconAuth {
             [ValidateSet("MainAuth", "PimforEntra", "PimforGroup", "Azure", "SecurityFindings")]
             [string]$Purpose,
 
-            [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken")]
+            [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken", "ServicePrincipal")]
             [string]$AuthFlow
         )
 
@@ -7269,6 +9299,34 @@ function invoke-EntraFalconAuth {
                 return "[*] Refreshing $Purpose access token ($AuthFlow)"
             }
         }
+    }
+
+    # Builds the Invoke-ClientCredential parameter hashtable from whichever SP* credential params were supplied.
+    $InvokeCC = {
+        param([string]$Api = "graph.microsoft.com")
+        $ccParams = @{
+            ClientId          = $SPClientId
+            TenantId          = $GLOBALAuthParameters['Tenant']
+            Api               = $Api
+            DisableJwtParsing = $true
+            Silent            = ((Get-LogLevel) -eq "Off")
+        }
+        if ($SPClientSecret) {
+            $ccParams['ClientSecret'] = $SPClientSecret
+        } elseif ($SPCertificatePath) {
+            $ccParams['CertificatePath'] = $SPCertificatePath
+            if ($SPCertificatePassword) { $ccParams['CertificatePassword'] = $SPCertificatePassword }
+        } elseif ($SPCertificatePemPath) {
+            $ccParams['CertificatePemPath']  = $SPCertificatePemPath
+            $ccParams['PrivateKeyPemPath']   = $SPPrivateKeyPemPath
+            if ($SPPrivateKeyPemPassword) { $ccParams['PrivateKeyPemPassword'] = $SPPrivateKeyPemPassword }
+        }
+        $token = Invoke-ClientCredential @ccParams
+        if (-not $token -or [string]::IsNullOrWhiteSpace($token.access_token)) {
+            throw "Service principal authentication did not return an access token. Check tenant, client ID, credential, and admin-consented application permissions."
+        }
+
+        return $token
     }
 
     # --------------------------
@@ -7291,6 +9349,10 @@ function invoke-EntraFalconAuth {
                     ManualCode = {
                         $tokens = Invoke-Auth -DisableJwtParsing -ManualCode @GLOBALAuthParameters
                         $global:GLOBALMsGraphAccessToken = $tokens
+                        $true
+                    }
+                    ServicePrincipal = {
+                        $global:GLOBALMsGraphAccessToken = & $InvokeCC
                         $true
                     }
                 }
@@ -7317,6 +9379,10 @@ function invoke-EntraFalconAuth {
                         $global:GLOBALPimForGroupAccessToken = $tokens
                         $true
                     }
+                    ServicePrincipal = {
+                        $global:GLOBALPimForGroupAccessToken = & $InvokeCC
+                        $true
+                    }
                 }
 
                 Azure = @{
@@ -7325,6 +9391,10 @@ function invoke-EntraFalconAuth {
                                                 -Api management.azure.com `
                                                 -DisableJwtParsing @GLOBALAuthParameters
                         $global:GLOBALArmAccessToken = $tokens
+                        $true
+                    }
+                    ServicePrincipal = {
+                        $global:GLOBALArmAccessToken = & $InvokeCC -Api "management.azure.com"
                         $true
                     }
                 }
@@ -7351,8 +9421,12 @@ function invoke-EntraFalconAuth {
                         $global:GLOBALPIMsGraphAccessToken = $tokens
                         $true
                     }
+                    ServicePrincipal = {
+                        $global:GLOBALPIMsGraphAccessToken = & $InvokeCC
+                        $true
+                    }
                 }
-                
+
                 SecurityFindings = @{
                     AuthCode = {
                         $tokens = Invoke-Auth -ClientID '80ccca67-54bd-44ab-8625-4b79c4dc7775' `
@@ -7488,6 +9562,10 @@ function invoke-EntraFalconAuth {
                         $global:GLOBALMsGraphAccessToken = $tokens
                         $true
                     }
+                    ServicePrincipal = {
+                        $global:GLOBALMsGraphAccessToken = & $InvokeCC
+                        $true
+                    }
                 }
                 PimforEntra = @{
                     Any = {
@@ -7495,6 +9573,10 @@ function invoke-EntraFalconAuth {
                                                 -ClientId "51f81489-12ee-4a9e-aaae-a2591f45987d" `
                                                 -DisableJwtParsing @GLOBALAuthParameters
                         $global:GLOBALPIMsGraphAccessToken = $tokens
+                        $true
+                    }
+                    ServicePrincipal = {
+                        $global:GLOBALPIMsGraphAccessToken = & $InvokeCC
                         $true
                     }
                 }
@@ -7552,7 +9634,10 @@ function invoke-EntraFalconAuth {
             $plan = Get-Plan -Table $Routes -Keys @($Action, $broKey, $Purpose, "Any")
         }
 
-        # If action is Refresh, authmethod isn't relevant: fall back to 'Any'
+        # For Refresh, try the exact authMethodKey first (e.g. ServicePrincipal), then fall back to Any
+        if (-not $plan -and $Action -eq 'Refresh') {
+            $plan = Get-Plan -Table $Routes -Keys @($Action, $broKey, $Purpose, $authMethodKey)
+        }
         if (-not $plan -and $Action -eq 'Refresh') {
             $plan = Get-Plan -Table $Routes -Keys @($Action, $broKey, $Purpose, 'Any')
         }
@@ -7571,7 +9656,19 @@ function invoke-EntraFalconAuth {
         & $plan
     }
     catch {
+        $errorMessage = $_.Exception.Message
         Write-Host "[!] Authentication flow failed for $Purpose" -ForegroundColor Red
+
+        if (-not [string]::IsNullOrWhiteSpace($errorMessage)) {
+            Write-Host "[!] $errorMessage" -ForegroundColor Red
+        }
+
+        $debugDetails = [System.Collections.Generic.List[string]]::new()
+        $debugDetails.Add("Authentication failure context: Action=$Action; Purpose=$Purpose; AuthFlow=$AuthFlow")
+        if ($_.Exception) {
+            $debugDetails.Add("ExceptionType=$($_.Exception.GetType().FullName)")
+        }
+        Write-Log -Level Debug -Message ($debugDetails -join [Environment]::NewLine)
         return $false
     }
 }
@@ -7586,6 +9683,10 @@ function start-CleanUp {
     remove-variable -Scope Global GLOBALArmAccessToken -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALUserAppRoles -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALPimForGroupsHT -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALPimForGroupsResources -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALPimForGroupsAssignmentObjects -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALPimForGroupsPolicySettingsSupported -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALPimForGroupsPolicySettingsSkipReason -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAuditSummary -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALMainTableDetailsHEAD -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALJavaScript -ErrorAction SilentlyContinue
@@ -7598,6 +9699,7 @@ function start-CleanUp {
     remove-variable -Scope Global GLOBALPimForGroupsChecked -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALUserSignInActivityAvailable -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAzurePsChecks -ErrorAction SilentlyContinue
+    remove-variable -Scope Global GLOBALAzureSubscriptionScopeMap -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAzureIamWarningText -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALAuthParameters -ErrorAction SilentlyContinue
     remove-variable -Scope Global GLOBALEntraRoleRating -ErrorAction SilentlyContinue
@@ -7687,4 +9789,4 @@ function Show-EntraFalconBanner {
     Write-Host ""
 }
 
-Export-ModuleMember -Function Show-EntraFalconBanner,AuthenticationMSGraph,Get-TenantReportAvailability,Get-TenantDomains,Initialize-TenantReportTabs,Set-GlobalReportManifest,Get-EffectiveEntraLicense,Get-Devices,Get-UsersBasic,Get-AgentObjectBasics,Get-ServicePrincipalSignInActivityLookup,Resolve-DirectoryObjectReference,start-CleanUp,Format-ReportSection,Get-OrgInfo,Get-LogLevel, Write-Log,Invoke-MsGraphRefreshPIM,Write-LogVerbose,Invoke-AzureRoleProcessing,Get-RegisterAuthMethodsUsers,Invoke-EntraRoleProcessing,Get-EntraPIMRoleAssignments,AuthCheckMSGraph,RefreshAuthenticationMsGraph,EnsureAuthSecurityFindingsMsGraph,RefreshAuthenticationSecurityFindingsMsGraph,Get-PimforGroupsAssignments,Invoke-CheckTokenExpiration,Invoke-MsGraphAuthPIM,EnsureAuthMsGraph,Get-AzureRoleDetails,Get-AdministrativeUnitsWithMembers,Get-ConditionalAccessPolicies,Get-EntraRoleAssignments,Get-APIPermissionCategory,New-AppRoleReferenceCache,Resolve-AppRoleReference,Get-AppRoleReferenceApiName,Get-AppRoleReferenceResourceAppId,Resolve-DelegatedPermissionGrantDetails,Resolve-AppRoleAssignmentRecord,Get-ApiPermissionImpactSummary,Get-ObjectInfo,EnsureAuthAzurePsNative,checkSubscriptionNative,Get-AllAzureIAMAssignmentsNative,Get-PIMForGroupsAssignmentsDetails,Show-EnumerationSummary,start-InitTasks,Get-HighestTierLabel,Merge-HigherTierLabel,Get-GroupDetails,Get-GroupActiveRoleMetrics,Get-EntraFalconHostOs,Test-NonWindowsAuthFlowCompatibility
+Export-ModuleMember -Function Show-EntraFalconBanner,AuthenticationMSGraph,Get-TenantReportAvailability,Get-TenantDomains,Initialize-TenantReportTabs,Set-GlobalReportManifest,Get-EffectiveEntraLicense,Get-Devices,Get-UsersBasic,Get-AgentObjectBasics,Get-ServicePrincipalSignInActivityLookup,Resolve-DirectoryObjectReference,Export-EntraFalconDebugObjectDump,Export-EntraFalconSecurityFindingsJson,start-CleanUp,Format-ReportSection,Get-OrgInfo,Get-LogLevel,Write-Log,Invoke-MsGraphRefreshPIM,Write-LogVerbose,Invoke-AzureRoleProcessing,Get-RegisterAuthMethodsUsers,Invoke-EntraRoleProcessing,Get-EntraPIMRoleAssignments,AuthCheckMSGraph,RefreshAuthenticationMsGraph,EnsureAuthSecurityFindingsMsGraph,RefreshAuthenticationSecurityFindingsMsGraph,Get-PimforGroupsAssignments,Invoke-CheckTokenExpiration,Invoke-MsGraphAuthPIM,EnsureAuthMsGraph,Get-AzureRoleDetails,Get-AdministrativeUnitsWithMembers,Get-ConditionalAccessPolicies,Get-EntraRoleAssignments,Get-APIPermissionCategory,New-AppRoleReferenceCache,Resolve-AppRoleReference,Get-AppRoleReferenceApiName,Get-AppRoleReferenceResourceAppId,Resolve-DelegatedPermissionGrantDetails,Resolve-AppRoleAssignmentRecord,Get-ApiPermissionImpactSummary,Get-ObjectInfo,EnsureAuthAzurePsNative,checkSubscriptionNative,Get-AllAzureIAMAssignmentsNative,Get-PIMForGroupsAssignmentsDetails,Show-EnumerationSummary,start-InitTasks,Get-HighestTierLabel,Merge-HigherTierLabel,Get-GroupDetails,Get-GroupActiveRoleMetrics,Get-EntraFalconHostOs,Test-NonWindowsAuthFlowCompatibility,Get-KnownMaliciousEnterpriseApp

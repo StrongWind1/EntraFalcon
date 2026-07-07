@@ -640,9 +640,9 @@ function Invoke-CheckPIM {
         $PimRoleSettingInfo= [pscustomobject]@{
             "RoleName" = $($item.Role)
             "Role Tier" = $($item.Tier)
-            "Eligible Assignments"  = "<a href=Role_Assignments_Entra_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html?Role=$([System.Uri]::EscapeDataString($item.Role))&AssignmentType=Eligible>$($item.Eligible)</a>"
-            "Direct Assignments"  = "<a href=Role_Assignments_Entra_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html?Role=$([System.Uri]::EscapeDataString($item.Role))&AssignmentType=Active&ActivatedViaPIM=false>$($item.Direct)</a>"
-            "Activated Assignments" = "<a href=Role_Assignments_Entra_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html?Role=$([System.Uri]::EscapeDataString($item.Role))&AssignmentType=Active&ActivatedViaPIM=true>$($item.Activated)</a>"
+            "Eligible Assignments"  = "<a href=Role_Assignments_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html?Role=$([System.Uri]::EscapeDataString($item.Role))&AssignmentType=Eligible>$($item.Eligible)</a>"
+            "Direct Assignments"  = "<a href=Role_Assignments_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html?Role=$([System.Uri]::EscapeDataString($item.Role))&AssignmentType=Active&ActivatedViaPIM=false>$($item.Direct)</a>"
+            "Activated Assignments" = "<a href=Role_Assignments_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html?Role=$([System.Uri]::EscapeDataString($item.Role))&AssignmentType=Active&ActivatedViaPIM=true>$($item.Activated)</a>"
         }
 
         #Build dynamic TXT report property list
@@ -679,8 +679,8 @@ function Invoke-CheckPIM {
                 $ApproversRaw = foreach ($object in $($item.ActivationApprovers)) {
                     #Check type and link the right file
                     $DisplayNameLink = switch ($object.Type) {
-                        "Group"     { "<a href=Groups_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.Description)</a>" }
-                        "User"      { "<a href=Users_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.Description)</a>" }
+                        "Group"     { "<a href=Groups_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.Description)</a>" }
+                        "User"      { "<a href=Users_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.Description)</a>" }
                         default     { $($object.Description) }
                     }
 
@@ -720,7 +720,7 @@ function Invoke-CheckPIM {
 
             $LinkedCapsRaw = foreach ($object in $($item.LinkedCapsDetails)) {
                 [pscustomobject]@{ 
-                    "DisplayNameLink" = "<a href=ConditionalAccessPolicies_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>"
+                    "DisplayNameLink" = "<a href=ConditionalAccessPolicies_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
                     "DisplayName" = $object.DisplayName
                     "AuthContextId" = ($object.AuthContextId -join ', ')
                     "Issues" = ($object.Issues -join ', ')
@@ -820,6 +820,29 @@ $ObjectsDetailsHEAD = @'
     <h2>PIM Policies Details</h2>
     <div class="details-toolbar">
         <button id="toggle-expand">Expand All</button>
+        <div class="details-search-wrapper">
+            <div class="details-search-box">
+                <input type="text" id="details-search" placeholder="Search details..." />
+                <button class="details-search-help-btn" type="button" title="Search help">?</button>
+                <div class="details-search-help-popover hidden">
+                    <div class="search-help-title">Search guide</div>
+                    <ul class="search-help-list">
+                        <li><code>term</code> — substring match anywhere in object</li>
+                        <li><code>!term</code> — exclude objects containing term</li>
+                        <li><code>=value</code> — exact field value match</li>
+                        <li><code>^prefix</code> — field value starts with</li>
+                        <li><code>$suffix</code> — field value ends with</li>
+                        <li><code>a && b</code> — both must match</li>
+                        <li><code>a || b</code> — either must match</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="details-search-clear" style="display:none" title="Clear search">&#x2715;</button>
+            <div class="detail-scope-toggle">
+                <button class="scope-btn active" data-scope="current">Filtered</button>
+                <button class="scope-btn" data-scope="global">All objects</button>
+            </div>
+        </div>
         <div id="details-info" class="details-info">Showing 0-0 of 0 entries</div>
     </div>
     <div id="object-container"></div>
@@ -828,12 +851,12 @@ $ObjectsDetailsHEAD = @'
     $AllObjectDetailsHTML = $ObjectsDetailsHEAD + "`n" + $AllObjectDetailsHTML + "`n" + '</script>'
 
     #Write TXT and CSV files
-    $headerTXT | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $tableOutput | format-table Role,Tier,Eligible,Direct,Activated,ActivationAuthContext,ActivationMFA,ActivationJustification,ActivationTicketing,ActivationDuration,ActivationApproval,EligibleExpiration,EligibleExpirationTime,ActiveExpiration,ActiveExpirationTime,ActiveAssignMFA,ActiveAssignJustification,AlertAssignEligible,AlertAssignActive,AlertActivation,Warnings | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $headerTXT | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $tableOutput | format-table Role,Tier,Eligible,Direct,Activated,ActivationAuthContext,ActivationMFA,ActivationJustification,ActivationTicketing,ActivationDuration,ActivationApproval,EligibleExpiration,EligibleExpirationTime,ActiveExpiration,ActiveExpirationTime,ActiveAssignMFA,ActiveAssignJustification,AlertAssignEligible,AlertAssignActive,AlertActivation,Warnings | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
     if ($Csv) {
-        $tableOutput | select-object Role,Tier,Eligible,Direct,Activated,ActivationAuthContext,ActivationMFA,ActivationJustification,ActivationTicketing,ActivationDuration,ActivationApproval,EligibleExpiration,EligibleExpirationTime,ActiveExpiration,ActiveExpirationTime,ActiveAssignMFA,ActiveAssignJustification,AlertAssignEligible,AlertAssignActive,AlertActivation,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+        $tableOutput | select-object Role,Tier,Eligible,Direct,Activated,ActivationAuthContext,ActivationMFA,ActivationJustification,ActivationTicketing,ActivationDuration,ActivationApproval,EligibleExpiration,EligibleExpirationTime,ActiveExpiration,ActiveExpirationTime,ActiveAssignMFA,ActiveAssignJustification,AlertAssignEligible,AlertAssignActive,AlertActivation,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).csv" -NoTypeInformation
     }
-    $DetailOutputTxt | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append    
+    $DetailOutputTxt | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
 
     # Set generic information which get injected into the HTML
     Set-GlobalReportManifest -CurrentReportKey 'PIM' -CurrentReportName 'PIM Enumeration'
@@ -850,8 +873,8 @@ $headerHtml = @"
 
     $PostContentCombined = $GLOBALJavaScript + "`n" + $AppendixDynamicHTML
     #Write HTML
-    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Title "$Title enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $PostContentCombined -PreContent $AllObjectDetailsHTML
-    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
+    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Head ("<title>EF - PIM</title>`n" + $global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $PostContentCombined -PreContent $AllObjectDetailsHTML
+    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).html"
 
     # Store in global var
     $GlobalAuditSummary.PimSettings.Count = $PimPoliciesCount

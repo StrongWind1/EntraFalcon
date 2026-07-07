@@ -71,7 +71,7 @@ function Invoke-CheckRoles {
             if ($MatchingUser) {
                 $object = [PSCustomObject]@{ 
                     DisplayName = $MatchingUser.UPN
-                    DisplayNameLink = "<a href=Users_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingUser.UPN)</a>"
+                    DisplayNameLink = "<a href=Users_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingUser.UPN)</a>"
                     Type = "User"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -84,7 +84,7 @@ function Invoke-CheckRoles {
             if ($MatchingGroup) {
                 $object = [PSCustomObject]@{ 
                     DisplayName = $MatchingGroup.DisplayName
-                    DisplayNameLink = "<a href=Groups_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingGroup.DisplayName)</a>"
+                    DisplayNameLink = "<a href=Groups_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingGroup.DisplayName)</a>"
                     Type = "Group"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -97,7 +97,7 @@ function Invoke-CheckRoles {
             if ($MatchingBlueprintPrincipal) {
                 $object = [PSCustomObject]@{
                     DisplayName     = $MatchingBlueprintPrincipal.DisplayName
-                    DisplayNameLink = "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingBlueprintPrincipal.DisplayName)</a>"
+                    DisplayNameLink = "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingBlueprintPrincipal.DisplayName)</a>"
                     Type            = "Agent Identity Blueprint Principal"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -110,7 +110,7 @@ function Invoke-CheckRoles {
             if ($MatchingAgentIdentity) {
                 $object = [PSCustomObject]@{
                     DisplayName     = $MatchingAgentIdentity.DisplayName
-                    DisplayNameLink = "<a href=AgentIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingAgentIdentity.DisplayName)</a>"
+                    DisplayNameLink = "<a href=AgentIdentities_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingAgentIdentity.DisplayName)</a>"
                     Type            = "Agent Identity"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -123,7 +123,7 @@ function Invoke-CheckRoles {
             if ($MatchingEnterpriseApp) {
                 $object = [PSCustomObject]@{ 
                     DisplayName = $MatchingEnterpriseApp.DisplayName
-                    DisplayNameLink = "<a href=EnterpriseApps_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingEnterpriseApp.DisplayName)</a>"
+                    DisplayNameLink = "<a href=EnterpriseApps_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingEnterpriseApp.DisplayName)</a>"
                     Type = "Enterprise Application"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -136,7 +136,7 @@ function Invoke-CheckRoles {
             if ($MatchingManagedIdentity) {
                 $object = [PSCustomObject]@{ 
                     DisplayName = $MatchingManagedIdentity.DisplayName
-                    DisplayNameLink = "<a href=ManagedIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingManagedIdentity.DisplayName)</a>"
+                    DisplayNameLink = "<a href=ManagedIdentities_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingManagedIdentity.DisplayName)</a>"
                     Type = "Managed Identity"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -149,7 +149,7 @@ function Invoke-CheckRoles {
             if ($MatchingAppRegistration) {
                 $object = [PSCustomObject]@{ 
                     DisplayName = $MatchingAppRegistration.DisplayName
-                    DisplayNameLink = "<a href=AppRegistration_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($ObjectID)>$($MatchingAppRegistration.DisplayName)</a>"
+                    DisplayNameLink = "<a href=AppRegistration_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($ObjectID)>$($MatchingAppRegistration.DisplayName)</a>"
                     Type = "App Registration"
                 }
                 $ObjectDetailsCache[$cacheKey] = $object
@@ -593,18 +593,18 @@ $headerHtml = @"
 
     #Generate and write HTML Entra role report
     Set-GlobalReportManifest -CurrentReportKey 'RoleEntra' -CurrentReportName 'Role Assignments Entra ID' -Warnings $WarningReport
-    $Report = ConvertTo-HTML -Body "$headerHtml $mainEntraTableHTML" -Title "$Title Enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript
-    $Report | Out-File "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
+    $Report = ConvertTo-HTML -Body "$headerHtml $mainEntraTableHTML" -Head ("<title>EF - Role Assignments (Entra)</title>`n" + $global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript
+    $Report | Out-File "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).html"
 
     #Write TXT and CSV files
-    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $headerTXTEntraRoles | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $SortedEntraRoles | format-table Role,RoleTier,IsPrivileged,IsBuiltIn,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType,ScopeResolved | Out-File -Width 512 "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $headerTXTEntraRoles | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $SortedEntraRoles | format-table Role,RoleTier,IsPrivileged,IsBuiltIn,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType,ScopeResolved | Out-File -Width 512 "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
     if ($Csv) {
-        $SortedEntraRoles | select-object Role,RoleTier,IsPrivileged,IsBuiltIn,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType,ScopeResolved | Export-Csv -Path "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+        $SortedEntraRoles | select-object Role,RoleTier,IsPrivileged,IsBuiltIn,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType,ScopeResolved | Export-Csv -Path "$outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).csv" -NoTypeInformation
     }
     $OutputFormats = if ($Csv) { "CSV,TXT,HTML" } else { "TXT,HTML" }
-    write-host "[+] Details of $($SortedEntraRoles.count) Entra ID role assignments stored in output files ($OutputFormats): $outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.DisplayName)"    
+    write-host "[+] Details of $($SortedEntraRoles.count) Entra ID role assignments stored in output files ($OutputFormats): $outputFolder\$($Title)_Entra_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName)"
 
     #Add information to the enumeration summary
     $EntraEligibleCount = 0
@@ -670,14 +670,14 @@ $headerHtml = @"
 
     if ($SortedAzureRoles.count -ge 1) {
         Set-GlobalReportManifest -CurrentReportKey 'RoleAz' -CurrentReportName 'Role Assignments Azure IAM'
-        $Report = ConvertTo-HTML -Body "$headerHtml $mainAzureTableHTML" -Title "$Title Enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript
-        $Report | Out-File "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
-        $headerTXTAzureRoles | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-        $SortedAzureRoles | format-table Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType | Out-File -Width 512 "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+        $Report = ConvertTo-HTML -Body "$headerHtml $mainAzureTableHTML" -Head ("<title>EF - Role Assignments (Azure)</title>`n" + $global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript
+        $Report | Out-File "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).html"
+        $headerTXTAzureRoles | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+        $SortedAzureRoles | format-table Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType | Out-File -Width 512 "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
         if ($Csv) {
-            $SortedAzureRoles | select-object Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType | Export-Csv -Path "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+            $SortedAzureRoles | select-object Scope,Role,RoleTier,RoleType,Conditions,AssignmentType,ActivatedViaPIM,Start,Expires,PrincipalDisplayName,PrincipalType | Export-Csv -Path "$outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).csv" -NoTypeInformation
         }
-        write-host "[+] Details of $($SortedAzureRoles.count) Azure role assignments stored in output files ($OutputFormats): $outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.DisplayName)"
+        write-host "[+] Details of $($SortedAzureRoles.count) Azure role assignments stored in output files ($OutputFormats): $outputFolder\$($Title)_Azure_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName)"
         
         #Add information to the enumeration summary
         $AzureEligibleCount = 0

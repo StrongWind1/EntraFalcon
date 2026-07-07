@@ -51,7 +51,6 @@ function Invoke-CheckGroups {
         }
     }   
 
-
     #Function to create transitive members
     function Get-TransitiveMembers {
         param (
@@ -207,7 +206,7 @@ function Invoke-CheckGroups {
     $NestedGroupsHighvalue = [System.Collections.Generic.List[object]]::new()
 	$AllGroupsDetails = [System.Collections.Generic.List[object]]::new()
     $AllObjectDetailsHTML = [System.Collections.ArrayList]::new()
-    $EscapedTenantName = [System.Uri]::EscapeDataString($CurrentTenant.DisplayName)
+    $EscapedTenantName = $CurrentTenant.FileSafeDisplayNameEncoded
 
     if (-not $GLOBALGraphExtendedChecks) {$GroupScriptWarningList.Add("Coverage gap: eligible role assignments not assessed; only active assignments are included.")}
 
@@ -434,6 +433,7 @@ function Invoke-CheckGroups {
 
     Write-Host "[*] Getting all group memberships"
     $GroupMembers = @{}
+    $DirectActiveMemberCountById = @{}
     $BatchSize = 10000
     $ChunkCount = [math]::Ceiling($GroupsTotalCount / $BatchSize)
     
@@ -458,8 +458,11 @@ function Invoke-CheckGroups {
 
         # Store results
         foreach ($item in $Response) {
-            if ($item.response.value) {
-                $GroupMembers[$item.id] = @($item.response.value)
+            $groupResponseId = [string]$item.id
+            $directMembers = @($item.response.value)
+            $DirectActiveMemberCountById[$groupResponseId] = $directMembers.Count
+            if ($directMembers.Count -gt 0) {
+                $GroupMembers[$groupResponseId] = $directMembers
             }
         }
     }
@@ -508,9 +511,13 @@ function Invoke-CheckGroups {
     # Send Batch request and create a hashtable
     $RawResponse = (Send-GraphBatchRequest -AccessToken $GLOBALmsGraphAccessToken.access_token -Requests $Requests -BetaAPI  -UserAgent $($GlobalAuditSummary.UserAgent.Name) -QueryParameters @{'$select' = 'id,userType,onPremisesSyncEnabled'})
     $GroupOwnersRaw = @{}
+    $DirectActiveOwnerCountById = @{}
     foreach ($item in $RawResponse) {
-        if ($item.response.value -and $item.response.value.Count -gt 0) {
-            $GroupOwnersRaw[$item.id] = $item.response.value
+        $groupResponseId = [string]$item.id
+        $directOwners = @($item.response.value)
+        $DirectActiveOwnerCountById[$groupResponseId] = $directOwners.Count
+        if ($directOwners.Count -gt 0) {
+            $GroupOwnersRaw[$groupResponseId] = $directOwners
         }
     }
 
@@ -663,6 +670,9 @@ function Invoke-CheckGroups {
         $owneruser     = [System.Collections.Generic.List[psobject]]::new()
         $ownersp       = [System.Collections.Generic.List[psobject]]::new()
         $baseOwnerUserDetails = [System.Collections.Generic.List[psobject]]::new()
+        $groupIdKey = [string]$group.Id
+        $DirectActiveMemberCount = if ($null -ne $DirectActiveMemberCountById -and $DirectActiveMemberCountById.ContainsKey($groupIdKey)) { [int]$DirectActiveMemberCountById[$groupIdKey] } else { 0 }
+        $DirectActiveOwnerCount = if ($null -ne $DirectActiveOwnerCountById -and $DirectActiveOwnerCountById.ContainsKey($groupIdKey)) { [int]$DirectActiveOwnerCountById[$groupIdKey] } else { 0 }
 
         # Process group members
         if ($TransitiveMembersRaw.ContainsKey($group.Id)) {
@@ -1352,6 +1362,8 @@ function Invoke-CheckGroups {
             MemberSpDetails = $memberSpDetails
             Devices = $memberdevices.count
             DevicesDetails = $memberdevices
+            DirectActiveMembers = $DirectActiveMemberCount
+            DirectActiveOwners = $DirectActiveOwnerCount
             DirectOwners = @($owneruser).count + @($ownersp).count + @($OwnerGroup).count
             NestedOwners = 0 #Will be adjusted in port-processing
             OwnerUserDetails = $owneruser
@@ -1618,7 +1630,7 @@ function Invoke-CheckGroups {
     $DetailTxtBuffer = [System.Text.StringBuilder]::new()
     $BufferThreshold = 5000
     $BufferedCount = 0
-    $DetailReportPath = "$OutputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt"
+    $DetailReportPath = "$OutputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt"
 
 #Define header
 $headerTXT = "************************************************************************************************************************
@@ -1629,7 +1641,7 @@ Execution Warnings = $($GroupScriptWarningList  -join ' / ')
 ************************************************************************************************************************
 "
 
-$tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPrem,Dynamic,Visibility,Protected,PIM,AuUnits,DirectOwners,NestedOwners,OwnersSynced,Users,Guests,SPCount,Devices,NestedGroups,NestedInGroups,AppRoles,CAPs,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,Impact,Likelihood,Risk,Warnings | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+$tableOutput | Format-table DisplayName,type,SecurityEnabled,RoleAssignable,OnPrem,Dynamic,Visibility,Protected,PIM,AuUnits,DirectOwners,NestedOwners,OwnersSynced,Users,Guests,SPCount,Devices,NestedGroups,NestedInGroups,AppRoles,CAPs,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,Impact,Likelihood,Risk,Warnings | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
 
 
     foreach ($item in $details) {
@@ -2495,6 +2507,29 @@ $ObjectsDetailsHEAD = @'
     <h2>Groups Details</h2>
     <div class="details-toolbar">
         <button id="toggle-expand">Expand All</button>
+        <div class="details-search-wrapper">
+            <div class="details-search-box">
+                <input type="text" id="details-search" placeholder="Search details..." />
+                <button class="details-search-help-btn" type="button" title="Search help">?</button>
+                <div class="details-search-help-popover hidden">
+                    <div class="search-help-title">Search guide</div>
+                    <ul class="search-help-list">
+                        <li><code>term</code> — substring match anywhere in object</li>
+                        <li><code>!term</code> — exclude objects containing term</li>
+                        <li><code>=value</code> — exact field value match</li>
+                        <li><code>^prefix</code> — field value starts with</li>
+                        <li><code>$suffix</code> — field value ends with</li>
+                        <li><code>a && b</code> — both must match</li>
+                        <li><code>a || b</code> — either must match</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="details-search-clear" style="display:none" title="Clear search">&#x2715;</button>
+            <div class="detail-scope-toggle">
+                <button class="scope-btn active" data-scope="current">Filtered</button>
+                <button class="scope-btn" data-scope="global">All objects</button>
+            </div>
+        </div>
         <div id="details-info" class="details-info">Showing 0-0 of 0 entries</div>
     </div>
     <div id="object-container"></div>
@@ -2532,23 +2567,23 @@ $headerHtml = @"
     ########################################## SECTION: OUTPUT WRITING ##########################################
 
     #Write TXT and CSV files
-    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
     if ($Csv) {
-        $tableOutput | select-object DisplayName,type,SecurityEnabled,RoleAssignable,OnPrem,Dynamic,Visibility,Protected,PIM,AuUnits,DirectOwners,NestedOwners,OwnersSynced,Users,Guests,SPCount,Devices,NestedGroups,NestedInGroups,AppRoles,CAPs,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,Impact,Likelihood,Risk,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+        $tableOutput | select-object DisplayName,type,SecurityEnabled,RoleAssignable,OnPrem,Dynamic,Visibility,Protected,PIM,AuUnits,DirectOwners,NestedOwners,OwnersSynced,Users,Guests,SPCount,Devices,NestedGroups,NestedInGroups,AppRoles,CAPs,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,Impact,Likelihood,Risk,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).csv" -NoTypeInformation
     }
 
     $OutputFormats = if ($Csv) { "CSV,TXT,HTML" } else { "TXT,HTML" }
-    write-host "[+] Details of $($tableOutput.count) groups stored in output files ($OutputFormats): $outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName)"
+    write-host "[+] Details of $($tableOutput.count) groups stored in output files ($OutputFormats): $outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName)"
     If ($DynamicGroupsCount -gt 0) {
-        $AppendixTitle | Out-File -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-        $AppendixDynamic | Out-File -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+        $AppendixTitle | Out-File -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+        $AppendixDynamic | Out-File -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
         $AppendixDynamicHTML = $AppendixDynamic | ConvertTo-Html -Fragment -PreContent "<h2>Appendix: Dynamic Groups</h2>"
     }
 
     $PostContentCombined = $GLOBALJavaScript + "`n" + $AppendixDynamicHTML
     #Write HTML
-    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Title "$Title enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $PostContentCombined -PreContent $AllObjectDetailsHTML
-    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
+    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Head ("<title>EF - Groups</title>`n" + $global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $PostContentCombined -PreContent $AllObjectDetailsHTML
+    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).html"
 
     $PmWritingReports.Stop()
     $PmEndTasks = [System.Diagnostics.Stopwatch]::StartNew()
@@ -2610,6 +2645,8 @@ $headerHtml = @"
             MembershipRule = $group.MembershipRule
             Userdetails = $group.Userdetails
             Guests = $group.Guests
+            NestedGroups = $group.NestedGroups
+            SPCount = $group.SPCount
             Protected = $group.Protected
             PIM = $group.PIM
             Impact = $group.Impact
@@ -2619,6 +2656,8 @@ $headerHtml = @"
             Warnings = $group.Warnings
             EntraRolePrivilegedCount = $group.EntraRolePrivilegedCount
             InheritedHighValue = $group.InheritedHighValue
+            DirectActiveMembers = $group.DirectActiveMembers
+            DirectActiveOwners = $group.DirectActiveOwners
             DirectOwners = $group.DirectOwners
             NestedOwners = $group.NestedOwners
         }

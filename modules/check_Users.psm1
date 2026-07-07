@@ -53,7 +53,7 @@ function Invoke-CheckUsers {
     $global:GLOBALUserSignInActivityAvailable = $true
     $AllUsersDetails = [System.Collections.ArrayList]::new()
     $WarningReport = [System.Collections.Generic.List[string]]::new()
-    $EscapedTenantName = [System.Uri]::EscapeDataString($CurrentTenant.DisplayName)
+    $EscapedTenantName = $CurrentTenant.FileSafeDisplayNameEncoded
     if (-not $GLOBALGraphExtendedChecks) {$WarningReport.Add("Coverage gap: eligible role assignments not assessed; only active assignments are included.")}
     if (-not ($GLOBALPimForGroupsChecked)) {$WarningReport.Add("Coverage gap: PIM for Groups not assessed; eligible group owners/members may be missing.")}
     if (-not ($GLOBALAzurePsChecks)) {
@@ -237,7 +237,7 @@ function Invoke-CheckUsers {
     $UsersTotalCount = @($AllUsers).count
     write-host "[+] Got $($UsersTotalCount) users"
 
-    # Get all transitve memberships (expensive!)
+    # Get all transitive memberships (expensive!)
     Write-Host "[*] Collecting user memberships"
 
     $UserMemberOfRaw = @{}
@@ -289,7 +289,6 @@ function Invoke-CheckUsers {
         $TotalTransitiveMemberRelations += $members.Count
     }
 
-    Write-Log -Level Verbose -Message "Got transitive member relationships: $TotalTransitiveMemberRelations"
     #Show warning in large tenants
     if (-not $LimitResults) {
         if ($TotalTransitiveMemberRelations -ge 1500000 -or $UsersTotalCount -ge 100000) {
@@ -1084,6 +1083,7 @@ function Invoke-CheckUsers {
             ParentBlueprintPrincipalId = $ParentBlueprintPrincipalId
             ParentBlueprintPrincipalDisplayName = $ParentBlueprintPrincipalDisplayName
             ForeignBlueprintPrincipal = $ForeignBlueprintPrincipal
+            ForeignAgent = if ($Agent) { [bool]$ForeignBlueprintPrincipal } else { "-" }
             CreatedDateTime = $item.CreatedDateTime
             CreatedDays = $CreatedDays
             LastInteractiveSignInDateTime = $LastInteractiveSignIn
@@ -1404,7 +1404,7 @@ function Write-EntraFalconUsersReport {
     write-host "[*] Processing results"
 
     #Define output of the main table
-    $tableOutput = $AllUsersDetails | Sort-Object Risk -Descending | select-object UPN,UPNlink,Enabled,UserType,Agent,OnPrem,Licenses,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,BlueprintOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings
+    $tableOutput = $AllUsersDetails | Sort-Object Risk -Descending | select-object UPN,UPNlink,Enabled,UserType,Agent,ForeignAgent,OnPrem,Licenses,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,BlueprintOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings
     
     # Apply result limit for the main table
     if ($LimitResults -and $LimitResults -gt 0) {
@@ -1422,6 +1422,7 @@ function Write-EntraFalconUsersReport {
 
     # Get the total count of group memberships. If this is to high the amount groups in the HTML report will be limited
     $TotalMemberGroups = $($AllUsersDetails.UserMemberGroups).count
+    Write-Log -Level Debug -Message "Total transitive group memberships across all users: $TotalMemberGroups"
     if ($TotalMemberGroups -ge 50000) {
         $LimitGroupMembers = $true
         $WarningReport.Add("GroupMembership: Only 10 groups are displayed to ensure HTML performance.")
@@ -1485,6 +1486,9 @@ function Write-EntraFalconUsersReport {
         }
         if (-not [string]::IsNullOrWhiteSpace($item.ParentAgentIdentityDisplayName)) {
             $ReportingUserInfo | Add-Member -NotePropertyName "Parent Agent Identity" -NotePropertyValue $item.ParentAgentIdentityDisplayName
+        }
+        if ("$($item.ForeignAgent)" -ne "-") {
+            $ReportingUserInfo | Add-Member -NotePropertyName "Foreign Agent" -NotePropertyValue $item.ForeignAgent
         }
         #Add sign-in info to the list if it's not shown in a dedicated table
         if ($null -ne $item.Department) {
@@ -1963,7 +1967,7 @@ function Write-EntraFalconUsersReport {
         }
 
         ############### Azure Roles
-        if ($item.AzureRoles -ge 1 ) {
+        if (@($item.AzureRoleDetails).Count -ge 1 ) {
             $ReportingAzureRoles = foreach ($object in $($item.AzureRoleDetails)) {
                 [pscustomobject]@{ 
                     "Role name" = $object.RoleName
@@ -2011,6 +2015,29 @@ $ObjectsDetailsHEAD = @'
     <h2>Users Details</h2>
     <div class="details-toolbar">
         <button id="toggle-expand">Expand All</button>
+        <div class="details-search-wrapper">
+            <div class="details-search-box">
+                <input type="text" id="details-search" placeholder="Search details..." />
+                <button class="details-search-help-btn" type="button" title="Search help">?</button>
+                <div class="details-search-help-popover hidden">
+                    <div class="search-help-title">Search guide</div>
+                    <ul class="search-help-list">
+                        <li><code>term</code> — substring match anywhere in object</li>
+                        <li><code>!term</code> — exclude objects containing term</li>
+                        <li><code>=value</code> — exact field value match</li>
+                        <li><code>^prefix</code> — field value starts with</li>
+                        <li><code>$suffix</code> — field value ends with</li>
+                        <li><code>a && b</code> — both must match</li>
+                        <li><code>a || b</code> — either must match</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="details-search-clear" style="display:none" title="Clear search">&#x2715;</button>
+            <div class="detail-scope-toggle">
+                <button class="scope-btn active" data-scope="current">Filtered</button>
+                <button class="scope-btn" data-scope="global">All objects</button>
+            </div>
+        </div>
         <div id="details-info" class="details-info">Showing 0-0 of 0 entries</div>
     </div>
     <div id="object-container"></div>
@@ -2032,7 +2059,7 @@ Execution Warnings = $($WarningReport  -join ' / ')
     write-host "[+] Writing log files"
     write-host ""
 
-    $mainTable = $tableOutput | select-object -Property @{Name = "UPN"; Expression = { $_.UPNlink}},Enabled,UserType,Agent,OnPrem,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,BlueprintOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings
+    $mainTable = $tableOutput | select-object -Property @{Name = "UPN"; Expression = { $_.UPNlink}},Enabled,UserType,Agent,@{Name = "ForeignAgent"; Expression = { if ($null -eq $_.ForeignAgent -or [string]::IsNullOrWhiteSpace([string]$_.ForeignAgent)) { "-" } else { $_.ForeignAgent } }},OnPrem,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,BlueprintOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings
     $mainTableJson  = $mainTable | ConvertTo-Json -Depth 5 -Compress
 
     $mainTableHTML = $GLOBALMainTableDetailsHEAD + "`n" + $mainTableJson + "`n" + '</script>'
@@ -2050,19 +2077,19 @@ $headerHtml = @"
 "@
 
     #Write TXT and CSV files
-    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
     if ($Csv) {
-        $tableOutput | select-object UPN,Enabled,UserType,Agent,OnPrem,Licenses,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,BlueprintOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+        $tableOutput | select-object UPN,Enabled,UserType,Agent,@{Name = "ForeignAgent"; Expression = { if ($null -eq $_.ForeignAgent -or [string]::IsNullOrWhiteSpace([string]$_.ForeignAgent)) { "-" } else { $_.ForeignAgent } }},OnPrem,Licenses,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,BlueprintOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).csv" -NoTypeInformation
     }
-    $tableOutput | format-table -Property UPN,Enabled,UserType,Agent,OnPrem,Licenses,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $DetailOutputTxt | Out-File -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $tableOutput | select-object UPN,Enabled,UserType,Agent,@{Name = "ForeignAgent"; Expression = { if ($null -eq $_.ForeignAgent -or [string]::IsNullOrWhiteSpace([string]$_.ForeignAgent)) { "-" } else { $_.ForeignAgent } }},OnPrem,Licenses,LicenseStatus,Protected,GrpMem,GrpOwn,AuUnits,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,AppRoles,AppRegOwn,SPOwn,DeviceOwn,DeviceReg,Inactive,LastSignInDays,CreatedDays,MfaCap,PerUserMfa,Impact,Likelihood,Risk,Warnings | format-table | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $DetailOutputTxt | Out-File -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
 
     $OutputFormats = if ($Csv) { "CSV,TXT,HTML" } else { "TXT,HTML" }
-    write-host "[+] Details of $($tableOutput.count) users stored in output files ($OutputFormats): $outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName)"
+    write-host "[+] Details of $($tableOutput.count) users stored in output files ($OutputFormats): $outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName)"
     
     #Write HTML
-    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Title "$Title enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript -PreContent $AllObjectDetailsHTML
-    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
+    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Head ("<title>EF - Users</title>`n" + $global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $GLOBALJavaScript -PreContent $AllObjectDetailsHTML
+    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).html"
 
     $PmWritingReports.Stop()
     $PmEndTasks = [System.Diagnostics.Stopwatch]::StartNew()

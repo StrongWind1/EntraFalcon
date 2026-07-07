@@ -23,7 +23,7 @@ Findings are presented in interactive HTML reports to support efficient explorat
 - Built-in authentication supporting multiple methods
 - Uses first-party Microsoft applications with pre-consented scopes to bypass Graph API consent prompts
 - Generates navigable HTML reports that support filtering, sorting, data export, etc.
-- Performs >60 automated checks and summarizes the results in a Security Findings Report
+- Performs >80 automated checks and summarizes the results in a Security Findings Report
     - Includes checks for weak tenant configurations and risky object properties or permissions
     - Provides severity ratings as well as descriptions of the issue, potential threats, and remediation guidance
     - Lists affected objects and links directly to their detailed reports for further investigation
@@ -46,7 +46,9 @@ Findings are presented in interactive HTML reports to support efficient explorat
     - Azure Role Assignments
     - Conditional Access Policies
     - Administrative Units
-    - PIM settings (for Entra Roles)
+    - PIM settings:
+        - PIM for Entra Roles
+        - PIM for Groups (BroCi auth only)
 
 
 ## ✅ Requirements
@@ -83,15 +85,16 @@ Use `-AuthFlow` to select the authentication flow.
 
 | Auth Flow                    | Windows | Linux/macOS | Interactive Logins | Convenience | Parameter(s)                         | Notes |
 |-----------------------------|---------|-------|--------------------|-------------|--------------------------------------|-------|
-| BroCi                       | Yes     | No    | 1                  | High        | `-AuthFlow BroCi` *(default)*        | Avoids reliance on legacy clients such as *Azure Active Directory PowerShell*. |
-| Auth Code Flow              | Yes     | No    | 4                  | Normal      | `-AuthFlow AuthCode`                 | Standard non-BroCi auth code flow. |
-| Device Code Flow            | Yes     | Yes   | 3                  | Normal      | `-AuthFlow DeviceCode`               | Authentication can be completed on another device, but two Security Findings checks run with reduced depth. |
-| Auth Code + Manual Code Flow| Yes     | Yes   | 4                  | Low-Normal  | `-AuthFlow ManualCode`               | Authentication can be completed on a different device or browser session. |
-| BroCi + Manual Code Flow    | Yes     | Yes   | 1                  | Low         | `-AuthFlow BroCiManualCode`          | Authorization code must be manually extracted from browser developer tools. |
-| BroCi with Token            | Yes     | Yes   | 0                  | Low         | `-AuthFlow BroCiToken -BroCiToken "<refresh_token>"` | Refresh token must be obtained manually (e.g., from browser dev tools or another auth tool). |
+| BroCi                       | Yes     | No    | 1                  | High        | `-AuthFlow BroCi` *(default)*        | Avoids reliance on legacy clients such as *Azure Active Directory PowerShell*. Supports all enumerations. |
+| Auth Code Flow              | Yes     | No    | 4                  | Normal      | `-AuthFlow AuthCode`                 | Standard non-BroCi auth code flow. Does not generate the standalone `PIM (Groups)` settings report. |
+| Device Code Flow            | Yes     | Yes   | 3                  | Normal      | `-AuthFlow DeviceCode`               | Authentication can be completed on another device, but two Security Findings checks run with reduced depth. Does not generate the standalone `PIM (Groups)` settings report. |
+| Auth Code + Manual Code Flow| Yes     | Yes   | 4                  | Low-Normal  | `-AuthFlow ManualCode`               | Authentication can be completed on a different device or browser session. Does not generate the standalone `PIM (Groups)` settings report. |
+| BroCi + Manual Code Flow    | Yes     | Yes   | 1                  | Low         | `-AuthFlow BroCiManualCode`          | Authorization code must be manually extracted from browser developer tools. Supports all enumerations.|
+| BroCi with Token            | Yes     | Yes   | 0                  | Low         | `-AuthFlow BroCiToken -BroCiToken "<refresh_token>"` | Refresh token must be obtained manually (e.g., from browser dev tools or another auth tool). Supports all enumerations. |
+| Service Principal           | Yes     | Yes   | 0                  | Low        | `-AuthFlow ServicePrincipal -SPClientId "<appId>" -Tenant "<tenantId>" ...` | App-only OAuth2 client credentials flow. Requires a custom app registration with sufficient Graph API permissions. Supports all enumerations. |
 
 
-#### Use BroCi flow (default, Beta / Windows only)
+#### Use BroCi flow (default / Windows only)
 BroCi uses alternate first-party applications and requires only one interactive sign-in.  
 It is further useful, when the *Azure Active Directory PowerShell* client requires assignment and must be avoided.
 
@@ -154,6 +157,51 @@ Example: Obtaining the refresh token from the browser
 ```
 
 
+#### Service Principal
+Authenticates as a registered application using the OAuth2 client credentials grant — no user interaction required.
+Useful for automated executions.  
+Requires a custom Entra app registration with `Application`-type Graph API permissions (see below).
+
+**With client secret:**
+```powershell
+.\run_EntraFalcon.ps1 -AuthFlow ServicePrincipal -Tenant "mysecuretenant.ch" -SPClientId "<AppId>" -SPClientSecret "<Secret>"
+```
+
+**With PFX certificate:**
+```powershell
+.\run_EntraFalcon.ps1 -AuthFlow ServicePrincipal -Tenant "mysecuretenant.ch" -SPClientId "<AppId>" -SPCertificatePath "C:\certs\app.pfx"
+```
+For a password-protected PFX, add `-SPCertificatePassword (Read-Host -Prompt "Certificate password" -AsSecureString)`.
+
+**With PEM certificate + private key (PowerShell 7+ only):**
+```powershell
+.\run_EntraFalcon.ps1 -AuthFlow ServicePrincipal -Tenant "mysecuretenant.ch" -SPClientId "<AppId>" -SPCertificatePemPath "C:\certs\cert.pem" -SPPrivateKeyPemPath "C:\certs\key.pem"
+```
+For an encrypted private key, add `-SPPrivateKeyPemPassword (Read-Host -Prompt "Private key password" -AsSecureString)`.
+
+##### Required App Registration Permissions
+Grant the following **Application** permissions (not Delegated) on the app registration and admin-consent them:
+
+| Permission | Type |
+|---|---|
+| `AdministrativeUnit.Read.All` | Application |
+| `AgentIdentity.Read.All` | Application |
+| `AgentIdentityBlueprint.Read.All` | Application |
+| `AgentIdentityBlueprintPrincipal.Read.All` | Application |
+| `Application.Read.All` | Application |
+| `AuditLog.Read.All` | Application |
+| `Device.Read.All` | Application |
+| `Group.Read.All` | Application |
+| `Organization.Read.All` | Application |
+| `Policy.Read.All` | Application |
+| `PrivilegedAccess.Read.AzureADGroup` | Application |
+| `RoleManagement.Read.Directory` | Application |
+| `RoleManagementPolicy.Read.AzureADGroup` | Application |
+| `User.Read.All` | Application |
+
+In addition, assign the **Azure Reader** role on the root management group (or every relevant subscription) and optionally the **Global Reader** role to the service principal in Entra ID (required for per-user MFA status).
+
+
 ### Other Parameters
 
 #### Include Microsoft-Owned Enterprise Apps
@@ -163,8 +211,8 @@ By default, official Microsoft enterprise applications are excluded from the ass
 ```
 
 #### Skip PIM for Groups Assessment
-Use the `-SkipPimForGroups` switch to skip the enumeration of PIM assignments for groups.  
-This skips the additional authentication needed to access PIM for Groups data.
+Use the `-SkipPimForGroups` switch to skip PIM-for-Groups precollection and enrichment.  
+This also skips the standalone `PIM (Groups)` settings report.
 ```powershell
 .\run_EntraFalcon.ps1 -SkipPimForGroups
 ```
@@ -179,10 +227,19 @@ This skips the additional authentication needed to access PIM for Groups data.
 | **LimitResults**       | Limits the number of groups and users in the report (after sorting by risk). Useful for large tenants.                           | -                                                 |
 | **LogLevel**           | Controls runtime cli logging verbosity. Supported values: `Off` (default), `Verbose`, `Debug`, `Trace`.                          | `Off`                                             |
 | **ApiTop**             | Sets the max number of objects returned from the API. Lower values reduce timeout risk (HTTP 504), but increase request count.   | `999` (Valid range: 5–999)                        |
-| **AuthFlow**           | Preferred auth-flow selector. Values: `BroCi` (default), `AuthCode`, `DeviceCode`, `ManualCode`, `BroCiManualCode`, `BroCiToken`. | `BroCi`                                         |
+| **AuthFlow**           | Preferred auth-flow selector. Values: `BroCi` (default), `AuthCode`, `DeviceCode`, `ManualCode`, `BroCiManualCode`, `BroCiToken`, `ServicePrincipal`. | `BroCi`                                         |
 | **BroCiToken**         | Azure Portal **refresh token** for `AuthFlow BroCiToken`.                                                                          | -                                                 |
+| **SPClientId**         | Application (client) ID of the service principal. Required for `-AuthFlow ServicePrincipal`.                                      | -                                                 |
+| **SPClientSecret**     | Client secret for the service principal. Used with `-AuthFlow ServicePrincipal`.                                                  | -                                                 |
+| **SPCertificatePath**  | Path to a PFX/P12 certificate file for service principal authentication.                                                          | -                                                 |
+| **SPCertificatePassword** | Password (`SecureString`) for the PFX certificate specified by `-SPCertificatePath`.                                          | -                                                 |
+| **SPCertificatePemPath** | Path to a PEM certificate file. Used together with `-SPPrivateKeyPemPath`.                                                      | -                                                 |
+| **SPPrivateKeyPemPath** | Path to the PEM private key file matching `-SPCertificatePemPath`.                                                               | -                                                 |
+| **SPPrivateKeyPemPassword** | Password (`SecureString`) for the PEM private key specified by `-SPPrivateKeyPemPath`.                                     | -                                                 |
 | **Csv**                | Enables writing CSV report files in addition to TXT/HTML report files.                                                             | `false`                                           |
 | **ExportCapUncoveredUsers** | For each enabled Conditional Access policy with user targeting, exports a CSV listing users **not** covered by that policy. Files are written to a `ConditionalAccessPolicies_UncoveredUsers` subfolder in the output directory. | `false` |
+| **ExportFindingsJson** | Exports all Security Findings as JSON at the end of the run. | `false` |
+| **DebugObjectDump**    | Exports final in-memory report objects as CLIXML to `Debug_ObjectDump` for troubleshooting and testing. | `false`                                      |
 
 
 ## 📊 Some Example Reports
@@ -212,8 +269,11 @@ This skips the additional authentication needed to access PIM for Groups data.
 ### Conditional Access Policies (Details Section)
 ![alt text](/images/caps_details.png)
 
-### PIM Role Settings
+### PIM Role Settings (Entra)
 ![alt text](/images/pim_settings.png)
+
+### Agent Identities
+![alt text](/images/agent_identities.png)
 
 ### Enumeration Summary
 ![alt text](/images/enumeration_overview.png)
@@ -229,7 +289,6 @@ This skips the additional authentication needed to access PIM for Groups data.
 - Click 🔄 **Reset View** to reset the view to the default.
 - Click on object names to jump to detailed information, even in other reports.
 - When using internal navigation, press the browser’s back button to return.
-- Browser search can locate content even within collapsed *Details* sections.
 - Some table header fields display helper text on mouse hover.
 - Sort data by clicking a table header.
 
@@ -273,8 +332,8 @@ For Azure roles, this categorization is less precise, as the actual impact depen
 <details>
 <summary>Entra ID Roles</summary>
 
-| Role Name                                      | Tier-Level | GUID                                   |
-|------------------------------------------------|------------|----------------------------------------|
+| Role Name                                     | Tier-Level | GUID                                   |
+|-----------------------------------------------|------------|----------------------------------------|
 | Global Administrator                          | 0          | 62e90394-69f5-4237-9190-012177145e10   |
 | Partner Tier2 Support                         | 0          | e00e864a-17c5-4a4b-9c06-f5b95a8d5bd8   |
 | Privileged Authentication Administrator       | 0          | 7be44c8a-adaf-4e2a-84d6-ab2649e08a13   |
@@ -286,6 +345,7 @@ For Azure roles, this categorization is less precise, as the actual impact depen
 | Cloud Application Administrator               | 0          | 158c047a-c907-4556-b7ef-446551a6b5f7   |
 | Security Administrator                        | 0          | 194ae4cb-b126-40b2-bd5b-6091b380977d   |
 | Agent ID Administrator                        | 1          | db506228-d27e-4b7d-95e5-295956d6615f   |
+| AI Administrator                              | 1          | d2562ede-74db-457e-a7b6-544e236ebb61   |
 | Conditional Access Administrator              | 1          | b1be1c3e-b65d-4f19-8427-f6fa0d97feb9   |
 | Authentication Administrator                  | 1          | c4e39bd9-1100-46d3-8c65-fb160da0071f   |
 | Azure DevOps Administrator                    | 1          | e3973bdf-4987-49ae-837a-ba8e231c7286   |
@@ -408,6 +468,7 @@ Certain API permissions allow an application to directly escalate to Global Admi
 | Calendars.ReadWrite                                         | Medium     | ef54d2bf-783f-4e0f-bca1-3210c0444d99   |
 | Mail.Read                                                   | Medium     | 810c84a8-4a9e-49e6-bf7d-12d183f40d01   |
 | Mail.ReadWrite                                              | Medium     | e2a3a72e-5f79-4c64-b1b1-878b674786c9   |
+| BitlockerKey.Read.All                                       | Medium     | 57f1cf28-c0c4-4ec3-9a30-19a2eaaf2f6e   |
 | Mail.Send                                                   | Medium     | b633e1c5-b582-4048-a93e-9f11b44c7e96   |
 | OnlineMeetings.ReadWrite.All                                | Medium     | b8bb2037-6e08-44ac-a4ea-4674e010e2a4   |
 | CustomSecAttributeAssignment.ReadWrite.All                  | Medium     | de89b5e4-5b8f-48eb-8925-29c2b33bd8bd   |
@@ -458,7 +519,6 @@ Certain API permissions allow an application to directly escalate to Global Admi
 | Files.ReadWrite.All                                  | High     | 863451e7-0667-486c-a5d6-d135439485f0   |
 | DeviceLocalCredential.Read.All                       | High     | 9917900e-410b-4d15-846e-42a357488545   |
 | AdministrativeUnit.ReadWrite.All                     | High     | 7b8a2d34-6b3f-4542-a343-54651608ad81   |
-| Directory.AccessAsUser.All                           | High     | 0e263e50-5827-48a4-b97c-d940288653c7   |
 | User.ReadWrite.All                                   | Medium   | 204e0828-b5ca-4ad8-b9f3-f32a958e7cc4   |
 | Chat.ReadWrite.All                                   | Medium   | 7e9a077b-3711-42b9-b7cb-5fa5f3f7fea7   |
 | Mail.Read                                            | Medium   | 570282fd-fa5c-430d-a7fd-fc8dc98a9dca   |
@@ -660,7 +720,6 @@ When BroCi authentication is used, only one interactive login occurs.
 |74658136-14ec-4630-ad9b-26e160ff0fc6|Non-Interactive|797f4846-ba00-4fd7-ba43-dac1f8f63013|Retrieve Azure IAM role assignment data|
 
 When BroCi is enabled, EntraFalcon also queries `api.azrbac.mspim.azure.com` for PIM for Groups.
-
 ### Details
 For data collection, the tool sends multiple requests to the Microsoft Graph API and, optionally, the Azure ARM API—one or more per object. Where possible, it leverages the Graph Batch endpoint to reduce the number of individual requests and improve efficiency.
 

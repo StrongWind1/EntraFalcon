@@ -66,6 +66,7 @@ function Invoke-CheckEnterpriseApps {
         "Owners"          	        = 5
 	    "UnknownAppLock"            = 1
         "NoAppLock"                 = 2
+        "KnownMaliciousApp"         = 1000
     }
 
     function Resolve-EnterpriseAppOwner {
@@ -116,6 +117,28 @@ function Invoke-CheckEnterpriseApps {
         }
     }
 
+    function Resolve-EnterpriseAppOwnedAgentObject {
+        param(
+            [Parameter(Mandatory = $true)]$OwnedObject
+        )
+
+        $resolvedObject = Resolve-DirectoryObjectReference -ObjectId $OwnedObject.Id -RawType $OwnedObject.'@odata.type' -CurrentTenant $CurrentTenant -AllUsersBasicHT $AllUsersBasicHT -AllGroupsDetails @{} -ServicePrincipalBasics @{} -AgentObjectBasics $AgentObjectBasics
+        if (-not $resolvedObject) { return $null }
+
+        return [pscustomobject]@{
+            Id                   = $resolvedObject.Id
+            AppId                = if ($resolvedObject.PSObject.Properties.Name -contains 'AppId') { $resolvedObject.AppId } else { $null }
+            DisplayName          = $resolvedObject.DisplayName
+            Enabled              = $resolvedObject.Enabled
+            PublisherName        = $resolvedObject.PublisherName
+            Foreign              = $resolvedObject.Foreign
+            Type                 = $resolvedObject.ObjectKind
+            TargetReport         = $resolvedObject.TargetReport
+            ServicePrincipalType = $resolvedObject.ServicePrincipalType
+            CreationDate         = if ($resolvedObject.PSObject.Properties.Name -contains 'CreationDate') { $resolvedObject.CreationDate } else { $null }
+        }
+    }
+
     ########################################## SECTION: DATACOLLECTION ##########################################
     # Get Enterprise Apps
     write-host "[*] Get Enterprise Apps"
@@ -154,7 +177,7 @@ function Invoke-CheckEnterpriseApps {
         $GlobalAuditSummary.EnterpriseApps.IncludeMsApps = $true
     }
 
-    # Filter out Agent Identitiey Blueprint Principals (Agent Identites are already excluded trough the filter "ServicePrincipalType eq 'Application'")
+    # Filter out Agent Identity Blueprint Principals (Agent Identities are already excluded through the filter "ServicePrincipalType eq 'Application'")
     $EnterpriseApps = @($EnterpriseApps | Where-Object {$_.'@odata.type' -ne '#microsoft.graph.agentIdentityBlueprintPrincipal'})
     $FilteredAgentIdentityBlueprintPrincipalsCount = $EnterpriseAppsCount - $EnterpriseApps.count
         if ($FilteredAgentIdentityBlueprintPrincipalsCount -gt 0) {
@@ -394,6 +417,7 @@ function Invoke-CheckEnterpriseApps {
         $WarningsHighPermission = $null
         $WarningsDangerousPermission = $null
         $WarningsMediumPermission = $null
+        $KnownMaliciousApp = $null
         $AppCredentials = @()
         $OwnerUserDetails = @()
         $OwnerSPDetails = @()
@@ -605,6 +629,9 @@ function Invoke-CheckEnterpriseApps {
         $OwnedApplications   = [System.Collections.ArrayList]::new()
         $OwnedGroups  	= [System.Collections.ArrayList]::new()
         $OwnedSP  	= [System.Collections.ArrayList]::new()
+        $OwnedBlueprints = [System.Collections.ArrayList]::new()
+        $OwnedBlueprintPrincipals = [System.Collections.ArrayList]::new()
+        $OwnedAgentIdentities = [System.Collections.ArrayList]::new()
         if ($OwnedObjectsRaw.ContainsKey($item.Id)) {
             foreach ($OwnedObject in $OwnedObjectsRaw[$item.Id]) {
                 switch ($OwnedObject.'@odata.type') {
@@ -636,6 +663,27 @@ function Invoke-CheckEnterpriseApps {
                                 displayName = $OwnedObject.displayName
                             }
                         )
+                    }
+
+                    '#microsoft.graph.agentIdentityBlueprint' {
+                        $resolvedOwnedObject = Resolve-EnterpriseAppOwnedAgentObject -OwnedObject $OwnedObject
+                        if ($resolvedOwnedObject) {
+                            [void]$OwnedBlueprints.Add($resolvedOwnedObject)
+                        }
+                    }
+
+                    '#microsoft.graph.agentIdentityBlueprintPrincipal' {
+                        $resolvedOwnedObject = Resolve-EnterpriseAppOwnedAgentObject -OwnedObject $OwnedObject
+                        if ($resolvedOwnedObject) {
+                            [void]$OwnedBlueprintPrincipals.Add($resolvedOwnedObject)
+                        }
+                    }
+
+                    '#microsoft.graph.agentIdentity' {
+                        $resolvedOwnedObject = Resolve-EnterpriseAppOwnedAgentObject -OwnedObject $OwnedObject
+                        if ($resolvedOwnedObject) {
+                            [void]$OwnedAgentIdentities.Add($resolvedOwnedObject)
+                        }
                     }
 
                 }
@@ -685,6 +733,7 @@ function Invoke-CheckEnterpriseApps {
         }
 
         $OwnedApplicationsCount = $OwnedApplications.count
+        $OwnedBlueprintsCount = $OwnedBlueprints.count
         $OwnedSPCount = $OwnedSP.count
     
 
@@ -692,7 +741,8 @@ function Invoke-CheckEnterpriseApps {
         $AppCredentialsSecrets = foreach ($creds in $item.PasswordCredentials) {
             [pscustomobject]@{
                 Type = "Secret"
-                DisplayName = $creds.DisplayName
+                DisplayName = if ([string]::IsNullOrWhiteSpace($creds.DisplayName)) { "-" } else { $creds.DisplayName }
+                Id = $creds.KeyId
                 EndDateTime = $creds.EndDateTime
                 StartDateTime = $creds.StartDateTime
             }
@@ -700,7 +750,8 @@ function Invoke-CheckEnterpriseApps {
         $AppCredentialsCertificates = foreach ($creds in $item.KeyCredentials) {
             [pscustomobject]@{
                 Type = "Certificate"
-                DisplayName = $creds.DisplayName
+                DisplayName = if ([string]::IsNullOrWhiteSpace($creds.DisplayName)) { "-" } else { $creds.DisplayName }
+                Id = $creds.KeyId
                 EndDateTime = $creds.EndDateTime
                 StartDateTime = $creds.StartDateTime
             }
@@ -739,6 +790,12 @@ function Invoke-CheckEnterpriseApps {
             
         } else {
             $ForeignTenant = $true
+        }
+
+        $KnownMaliciousApp = Get-KnownMaliciousEnterpriseApp -AppId $item.AppId
+        if ($null -ne $KnownMaliciousApp) {
+            $Warnings += "Known malicious application!"
+            $LikelihoodScore += $SPLikelihoodScore["KnownMaliciousApp"]
         }
 
         if ($AzureRoleCount -ge 1) {
@@ -863,6 +920,11 @@ function Invoke-CheckEnterpriseApps {
         #If SP owns App Registration
         if ($OwnedApplicationsCount -ge 1) {
             $Warnings += "SP owns $OwnedApplicationsCount App Registrations!" 
+        }
+
+        #If SP owns Agent Identity Blueprint
+        if ($OwnedBlueprintsCount -ge 1) {
+            $Warnings += "SP owns $OwnedBlueprintsCount Agent Identity Blueprint(s)!"
         }
 
         #If SP owns another SP
@@ -1160,7 +1222,11 @@ function Invoke-CheckEnterpriseApps {
             PermissionCount = ($AppAssignments | Measure-Object).count
             GrpOwn = ($OwnedGroups | Measure-Object).count
             AppOwn = $OwnedApplicationsCount
+            BlueprintOwn = $OwnedBlueprintsCount
             OwnedApplicationsDetails = $OwnedApplications
+            OwnedBlueprintsDetails = $OwnedBlueprints
+            OwnedBlueprintPrincipalsDetails = $OwnedBlueprintPrincipals
+            OwnedAgentIdentitiesDetails = $OwnedAgentIdentities
             SpOwn = $OwnedSPCount
             OwnedSPDetails = $OwnedSP
             GroupMember = $GroupMember
@@ -1203,6 +1269,8 @@ function Invoke-CheckEnterpriseApps {
             ApiMedium = $AppApiPermissionMedium
             ApiLow = $AppApiPermissionLow
             ApiMisc = $AppApiPermissionUncategorized
+            KnownMaliciousApplication = ($null -ne $KnownMaliciousApp)
+            KnownMaliciousSourceUrl = $KnownMaliciousApp
             Impact = $ImpactScore
             Likelihood = $LikelihoodScore
             Risk = $ImpactScore * $LikelihoodScore
@@ -1286,7 +1354,7 @@ function Invoke-CheckEnterpriseApps {
     write-host "[*] Generating reports"
 
     #Define output of the main table
-    $tableOutput = $AllServicePrincipal | Sort-Object -Property risk -Descending | select-object DisplayName,DisplayNameLink,AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,AppRoles,GrpMem,GrpOwn,AppOwn,SpOwn,EntraRoles,EntraMaxTier,Owners,Credentials,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings
+    $tableOutput = $AllServicePrincipal | Sort-Object -Property risk -Descending | select-object DisplayName,DisplayNameLink,AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,AppRoles,GrpMem,GrpOwn,AppOwn,BlueprintOwn,SpOwn,EntraRoles,EntraMaxTier,Owners,Credentials,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings
     
     #Define the apps to be displayed in detail and sort them by risk score
     $details = $AllServicePrincipal | Sort-Object Risk -Descending
@@ -1308,6 +1376,9 @@ function Invoke-CheckEnterpriseApps {
         $ReportingAzureRoles = @()
         $ReportingGroupOwner = @()
         $ReportingAppOwner = @()
+        $ReportingBlueprintOwner = @()
+        $ReportingBlueprintPrincipalOwner = @()
+        $ReportingAgentIdentityOwner = @()
         $ReportingSPOwner = @()
         $ReportingGroupMember = @()
         $ReportingCredentials = @()
@@ -1336,11 +1407,22 @@ function Invoke-CheckEnterpriseApps {
         }
         #If it is not a foreign app, add the link to the appreg
         if (-not $item.Foreign) {
-            $ReportingEntAppInfo | Add-Member -NotePropertyName AppRegistration -NotePropertyValue "<a href=AppRegistration_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($item.AppRegObjectId)>$($item.DisplayName)</a>"
+            $ReportingEntAppInfo | Add-Member -NotePropertyName AppRegistration -NotePropertyValue "<a href=AppRegistration_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($item.AppRegObjectId)>$($item.DisplayName)</a>"
         }
 
         #Build dynamic TXT report property list
         $TxtReportProps = @("App Name","Publisher Name","Publisher TenantId","Enabled", "App Client-ID","App Object-ID","MS Default","Foreign","Require AppRole","SAML","RiskScore")
+
+        if ($item.KnownMaliciousApplication) {
+            $ReportingEntAppInfo | Add-Member -NotePropertyName "Known Malicious Application" -NotePropertyValue $true
+            if (-not [string]::IsNullOrWhiteSpace($item.KnownMaliciousSourceUrl)) {
+                $ReportingEntAppInfo | Add-Member -NotePropertyName "Malicious App Source" -NotePropertyValue "<a href=`"$($item.KnownMaliciousSourceUrl)`" target=`"_blank`">$($item.KnownMaliciousSourceUrl)</a>"
+            }
+            $TxtReportProps += "Known Malicious Application"
+            if ($ReportingEntAppInfo.PSObject.Properties.Name -contains "Malicious App Source") {
+                $TxtReportProps += "Malicious App Source"
+            }
+        }
 
         if ($item.Warnings -ne '') {
             $ReportingEntAppInfo | Add-Member -NotePropertyName Warnings -NotePropertyValue $item.Warnings
@@ -1416,7 +1498,7 @@ function Invoke-CheckEnterpriseApps {
             $ReportingGroupOwner = foreach ($object in $($item.GroupOwner)) {
                 [pscustomobject]@{ 
                     "DisplayName" = $($object.DisplayName)
-                    "DisplayNameLink" = "<a href=Groups_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>"
+                    "DisplayNameLink" = "<a href=Groups_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
                     "SecurityEnabled" = $($object.SecurityEnabled)
                     "RoleAssignable" = $($object.RoleAssignable)
                     "EntraRoles" = $($object.AssignedRoleCount)
@@ -1450,7 +1532,7 @@ function Invoke-CheckEnterpriseApps {
             $ReportingAppOwner = foreach ($object in $($item.OwnedApplicationsDetails)) {
                 [pscustomobject]@{ 
                     "DisplayName" = $($object.DisplayName)
-                    "DisplayNameLink" = "<a href=AppRegistration_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>"
+                    "DisplayNameLink" = "<a href=AppRegistration_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
                 }
             }
 
@@ -1461,6 +1543,75 @@ function Invoke-CheckEnterpriseApps {
             $ReportingAppOwner = foreach ($obj in $ReportingAppOwner) {
                 [pscustomobject]@{
                     DisplayName        = $obj.DisplayNameLink
+                }
+            }
+        }
+
+        if ($($item.OwnedBlueprintsDetails | Measure-Object).count -ge 1) {
+            $ReportingBlueprintOwner = foreach ($object in $($item.OwnedBlueprintsDetails)) {
+                [pscustomobject]@{
+                    "DisplayName" = $($object.DisplayName)
+                    "DisplayNameLink" = "<a href=AgentIdentityBlueprints_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
+                    "Enabled" = $(if ($null -eq $object.Enabled) { "-" } else { $object.Enabled })
+                    "Created" = $(if ($null -ne $object.CreationDate) { $object.CreationDate.ToString() } else { "-" })
+                }
+            }
+
+            [void]$DetailTxtBuilder.AppendLine("================================================================================================")
+            [void]$DetailTxtBuilder.AppendLine("Owned Blueprints")
+            [void]$DetailTxtBuilder.AppendLine("================================================================================================")
+            [void]$DetailTxtBuilder.AppendLine(($ReportingBlueprintOwner | Format-Table DisplayName,Enabled,Created | Out-String))
+            $ReportingBlueprintOwner = foreach ($obj in $ReportingBlueprintOwner) {
+                [pscustomobject]@{
+                    DisplayName = $obj.DisplayNameLink
+                    Enabled     = $obj.Enabled
+                    Created     = $obj.Created
+                }
+            }
+        }
+
+        if ($($item.OwnedBlueprintPrincipalsDetails | Measure-Object).count -ge 1) {
+            $ReportingBlueprintPrincipalOwner = foreach ($object in $($item.OwnedBlueprintPrincipalsDetails)) {
+                [pscustomobject]@{
+                    "DisplayName" = $($object.DisplayName)
+                    "DisplayNameLink" = "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
+                    "Enabled" = $($object.Enabled)
+                    "PublisherName" = $($object.PublisherName)
+                }
+            }
+
+            [void]$DetailTxtBuilder.AppendLine("================================================================================================")
+            [void]$DetailTxtBuilder.AppendLine("Owned Blueprint Principals")
+            [void]$DetailTxtBuilder.AppendLine("================================================================================================")
+            [void]$DetailTxtBuilder.AppendLine(($ReportingBlueprintPrincipalOwner | Format-Table DisplayName,Enabled,PublisherName | Out-String))
+            $ReportingBlueprintPrincipalOwner = foreach ($obj in $ReportingBlueprintPrincipalOwner) {
+                [pscustomobject]@{
+                    DisplayName   = $obj.DisplayNameLink
+                    Enabled       = $obj.Enabled
+                    PublisherName = $obj.PublisherName
+                }
+            }
+        }
+
+        if ($($item.OwnedAgentIdentitiesDetails | Measure-Object).count -ge 1) {
+            $ReportingAgentIdentityOwner = foreach ($object in $($item.OwnedAgentIdentitiesDetails)) {
+                [pscustomobject]@{
+                    "DisplayName" = $($object.DisplayName)
+                    "DisplayNameLink" = "<a href=AgentIdentities_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
+                    "Enabled" = $($object.Enabled)
+                    "PublisherName" = $($object.PublisherName)
+                }
+            }
+
+            [void]$DetailTxtBuilder.AppendLine("================================================================================================")
+            [void]$DetailTxtBuilder.AppendLine("Owned Agent Identities")
+            [void]$DetailTxtBuilder.AppendLine("================================================================================================")
+            [void]$DetailTxtBuilder.AppendLine(($ReportingAgentIdentityOwner | Format-Table DisplayName,Enabled,PublisherName | Out-String))
+            $ReportingAgentIdentityOwner = foreach ($obj in $ReportingAgentIdentityOwner) {
+                [pscustomobject]@{
+                    DisplayName   = $obj.DisplayNameLink
+                    Enabled       = $obj.Enabled
+                    PublisherName = $obj.PublisherName
                 }
             }
         }
@@ -1494,7 +1645,7 @@ function Invoke-CheckEnterpriseApps {
             $ReportingGroupMember = foreach ($object in $($item.GroupMember)) {
                 [pscustomobject]@{ 
                     "DisplayName" = $($object.DisplayName)
-                    "DisplayNameLink" = "<a href=Groups_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>"
+                    "DisplayNameLink" = "<a href=Groups_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>"
                     "SecurityEnabled" = $($object.SecurityEnabled)
                     "RoleAssignable" = $($object.RoleAssignable)
                     "EntraRoles" = $($object.AssignedRoleCount)
@@ -1546,11 +1697,11 @@ function Invoke-CheckEnterpriseApps {
                 # Build link for HTML report based on the object type
                 switch ($object.AppRoleAssignmentType) {
                     'User' {
-                        $AppRoleMemberLink = "<a href=Users_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.AppRoleMemberId)>$($object.AppRoleMember)</a>"
+                        $AppRoleMemberLink = "<a href=Users_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.AppRoleMemberId)>$($object.AppRoleMember)</a>"
                         break
                     }
                     'Group' {
-                        $AppRoleMemberLink = "<a href=Groups_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.AppRoleMemberId)>$($object.AppRoleMember)</a>"
+                        $AppRoleMemberLink = "<a href=Groups_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.AppRoleMemberId)>$($object.AppRoleMember)</a>"
                         break
                     }
                     'ServicePrincipal' {
@@ -1600,7 +1751,7 @@ function Invoke-CheckEnterpriseApps {
                 $ReportingAppOwnersUser = foreach ($object in $($item.OwnerUserDetails)) {
                     [pscustomobject]@{ 
                         "UPN" = $($object.UPN)
-                        "UPNLink" = "<a href=Users_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.UPN)</a>"
+                        "UPNLink" = "<a href=Users_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.UPN)</a>"
                         "Enabled" = $($object.Enabled)
                         "Type" = $($object.Type)
                         "OnPremSync" = $($object.OnPremSync)
@@ -1630,9 +1781,9 @@ function Invoke-CheckEnterpriseApps {
                 $ReportingAppOwnersSP = foreach ($object in $($item.OwnerSPDetails)) {
                     # Route mixed non-user owners to the correct report based on the normalized target report.
                     $displayNameLink = switch ($object.TargetReport) {
-                        'AgentIdentities' { "<a href=AgentIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
-                        'AgentIdentityBlueprintsPrincipals' { "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
-                        'ManagedIdentities' { "<a href=ManagedIdentities_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.id)>$($object.DisplayName)</a>" }
+                        'AgentIdentities' { "<a href=AgentIdentities_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>" }
+                        'AgentIdentityBlueprintsPrincipals' { "<a href=AgentIdentityBlueprintsPrincipals_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>" }
+                        'ManagedIdentities' { "<a href=ManagedIdentities_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.id)>$($object.DisplayName)</a>" }
                         default { "<a href=#$($object.id)>$($object.DisplayName)</a>" }
                     }
                     [pscustomobject]@{ 
@@ -1686,7 +1837,7 @@ function Invoke-CheckEnterpriseApps {
                 # Check if a matching user was found
                 if ($userDetails) {
                     $PrincipalUpn = $userDetails.UserPrincipalName
-                    $PrincipalUpnLink = "<a href=Users_$($StartTimestamp)_$([System.Uri]::EscapeDataString($CurrentTenant.DisplayName)).html#$($object.Principal)>$($PrincipalUpn)</a>"
+                    $PrincipalUpnLink = "<a href=Users_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayNameEncoded).html#$($object.Principal)>$($PrincipalUpn)</a>"
                 } else {
                     # Handle the case where no match was found
                     $PrincipalUpn = $object.Principal
@@ -1729,6 +1880,9 @@ function Invoke-CheckEnterpriseApps {
             "Azure IAM assignments" = $ReportingAzureRoles
             "Owner of Groups" = $ReportingGroupOwner
             "Owned App Registrations" = $ReportingAppOwner
+            "Owned Blueprints" = $ReportingBlueprintOwner
+            "Owned Blueprint Principals" = $ReportingBlueprintPrincipalOwner
+            "Owned Agent Identities" = $ReportingAgentIdentityOwner
             "Owned Enterprise Applications" = $ReportingSPOwner
             "Member in Groups (transitive)" = $ReportingGroupMember
             "Enterprise Application Credentials" = $ReportingCredentials
@@ -1748,7 +1902,7 @@ function Invoke-CheckEnterpriseApps {
     write-host "[*] Writing log files"
     write-host
 
-    $mainTable = $tableOutput | select-object -Property @{Name = "DisplayName"; Expression = { $_.DisplayNameLink}},AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,Owners,Credentials,AppRoles,GrpMem,GrpOwn,AppOwn,SpOwn,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings
+    $mainTable = $tableOutput | select-object -Property @{Name = "DisplayName"; Expression = { $_.DisplayNameLink}},AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,Owners,Credentials,AppRoles,GrpMem,GrpOwn,AppOwn,BlueprintOwn,SpOwn,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings
     $mainTableJson  = $mainTable | ConvertTo-Json -Depth 5 -Compress
 
     $mainTableHTML = $GLOBALMainTableDetailsHEAD + "`n" + $mainTableJson + "`n" + '</script>'
@@ -1759,6 +1913,29 @@ $ObjectsDetailsHEAD = @'
     <h2>Enterprise Applications Details</h2>
     <div class="details-toolbar">
         <button id="toggle-expand">Expand All</button>
+        <div class="details-search-wrapper">
+            <div class="details-search-box">
+                <input type="text" id="details-search" placeholder="Search details..." />
+                <button class="details-search-help-btn" type="button" title="Search help">?</button>
+                <div class="details-search-help-popover hidden">
+                    <div class="search-help-title">Search guide</div>
+                    <ul class="search-help-list">
+                        <li><code>term</code> — substring match anywhere in object</li>
+                        <li><code>!term</code> — exclude objects containing term</li>
+                        <li><code>=value</code> — exact field value match</li>
+                        <li><code>^prefix</code> — field value starts with</li>
+                        <li><code>$suffix</code> — field value ends with</li>
+                        <li><code>a && b</code> — both must match</li>
+                        <li><code>a || b</code> — either must match</li>
+                    </ul>
+                </div>
+            </div>
+            <button id="details-search-clear" style="display:none" title="Clear search">&#x2715;</button>
+            <div class="detail-scope-toggle">
+                <button class="scope-btn active" data-scope="current">Filtered</button>
+                <button class="scope-btn" data-scope="global">All objects</button>
+            </div>
+        </div>
         <div id="details-info" class="details-info">Showing 0-0 of 0 entries</div>
     </div>
     <div id="object-container"></div>
@@ -1815,23 +1992,23 @@ $headerHtml = @"
 "@
 
     #Write TXT and CSV files
-    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $tableOutput | format-table DisplayName,AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,Owners,Credentials,AppRoles,GrpMem,GrpOwn,AppOwn,SpOwn,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $headerTXT | Out-File -Width 512 -FilePath "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $tableOutput | format-table DisplayName,AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,Owners,Credentials,AppRoles,GrpMem,GrpOwn,AppOwn,BlueprintOwn,SpOwn,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
     if ($Csv) {
-        $tableOutput | select-object DisplayName,AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,Owners,Credentials,AppRoles,GrpMem,GrpOwn,AppOwn,SpOwn,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).csv" -NoTypeInformation
+        $tableOutput | select-object DisplayName,AppRoleRequired,PublisherName,DefaultMS,Foreign,Enabled,Inactive,SAML,LastSignInDays,CreationInDays,Owners,Credentials,AppRoles,GrpMem,GrpOwn,AppOwn,BlueprintOwn,SpOwn,EntraRoles,EntraMaxTier,AzureRoles,AzureMaxTier,ApiDangerous, ApiHigh, ApiMedium, ApiLow, ApiMisc,ApiDelegated,ApiDelegatedDangerous,ApiDelegatedHigh,ApiDelegatedMedium,ApiDelegatedLow,ApiDelegatedMisc,Impact,Likelihood,Risk,Warnings | Export-Csv -Path "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).csv" -NoTypeInformation
     }
-    $DetailOutputTxt | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $AppendixHeaderTXT | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
-    $ApiPermissionReference | Format-Table -AutoSize | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).txt" -Append
+    $DetailOutputTxt | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $AppendixHeaderTXT | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
+    $ApiPermissionReference | Format-Table -AutoSize | Out-File -Width 512 "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).txt" -Append
    
     #Write HTML
     $ApiPermissionReferenceHTML += $ApiPermissionReference | ConvertTo-Html -Fragment -PreContent "<h2>Appendix: Used API Permission Reference</h2>"
     $PostContentCombined = $GLOBALJavaScript + "`n" + $ApiPermissionReferenceHTML
-    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Title "$Title Enumeration" -Head ($global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $PostContentCombined -PreContent $AllObjectDetailsHTML
-    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName).html"
+    $Report = ConvertTo-HTML -Body "$headerHTML $mainTableHTML" -Head ("<title>EF - Enterprise Apps</title>`n" + $global:GLOBALReportManifestScript + $global:GLOBALCss) -PostContent $PostContentCombined -PreContent $AllObjectDetailsHTML
+    $Report | Out-File "$outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName).html"
    
     $OutputFormats = if ($Csv) { "CSV,TXT,HTML" } else { "TXT,HTML" }
-    write-host "[+] Details of $EnterpriseAppsCount Enterprise Applications stored in output files ($OutputFormats): $outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.DisplayName)"
+    write-host "[+] Details of $EnterpriseAppsCount Enterprise Applications stored in output files ($OutputFormats): $outputFolder\$($Title)_$($StartTimestamp)_$($CurrentTenant.FileSafeDisplayName)"
    
     #Add information to the enumeration summary
     $ForeignCount = 0

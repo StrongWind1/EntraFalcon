@@ -40,12 +40,34 @@
     - `ManualCode`: Auth Code + Manual Code flow (non-BroCi)
     - `BroCiManualCode`: BroCi + Manual Code flow
     - `BroCiToken`: BroCi flow using a supplied refresh token (`-BroCiToken`)
+    - `ServicePrincipal`: Client Credentials flow using a custom app registration (`-SPClientId` + secret or certificate)
 
     .PARAMETER BroCiToken
     Optional Bring Your Own BroCi refresh token.
     Required when using `-AuthFlow BroCiToken`.
     The provided token must be a valid refresh token for the Azure Portal client (c44b4083-3bb0-49c1-b47d-974e53cbdf3c).
     Treat this value as sensitive secret material.
+
+    .PARAMETER SPClientId
+    Client ID of the app registration to use with `-AuthFlow ServicePrincipal`.
+
+    .PARAMETER SPClientSecret
+    Client secret for the app registration. Used with `-AuthFlow ServicePrincipal`.
+
+    .PARAMETER SPCertificatePath
+    Path to a PFX/P12 certificate file for client assertion. Used with `-AuthFlow ServicePrincipal`.
+
+    .PARAMETER SPCertificatePassword
+    Optional password (`SecureString`) for the PFX certificate specified by `-SPCertificatePath`. Use `Read-Host -AsSecureString` to create the value.
+
+    .PARAMETER SPCertificatePemPath
+    Path to a PEM certificate file. Used together with `-SPPrivateKeyPemPath` for `-AuthFlow ServicePrincipal`. Requires PowerShell 7+.
+
+    .PARAMETER SPPrivateKeyPemPath
+    Path to a PEM private key file. Used together with `-SPCertificatePemPath` for `-AuthFlow ServicePrincipal`. Requires PowerShell 7+.
+
+    .PARAMETER SPPrivateKeyPemPassword
+    Optional password (`SecureString`) for the encrypted PEM private key specified by `-SPPrivateKeyPemPath`. Use `Read-Host -AsSecureString` to create the value. Requires PowerShell 7+.
 
     .PARAMETER SkipPimForGroups
     Skips the enumeration of PIM for Groups, avoiding the need for a secondary authentication flow.
@@ -64,9 +86,16 @@
     .PARAMETER QAMode
     Dumps the AllGroups and AllUsers objects as JSON for internal QA tests.
 
+    .PARAMETER DebugObjectDump
+    Exports a CLIXML debug snapshot of final in-memory report objects to Debug_ObjectDump under the output folder.
+
     .PARAMETER Csv
     Enables CSV report generation for enumeration modules.
     By default, reports are written as HTML and TXT only.
+
+    .PARAMETER ExportFindingsJson
+    Exports the complete Security Findings report as JSON at the end of the run.
+    The output matches the JSON (All) export from the interactive Security Findings report.
 
     .NOTES
     Author: Christian Feuchter, Compass Security Switzerland AG, https://www.compass-security.com/
@@ -77,7 +106,7 @@
 [CmdletBinding()]
 Param (
     [Parameter(Mandatory = $false)]
-    [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken")]
+    [ValidateSet("BroCi", "AuthCode", "DeviceCode", "ManualCode", "BroCiManualCode", "BroCiToken", "ServicePrincipal")]
     [string]$AuthFlow = "BroCi",
 
     [Parameter(Mandatory = $false)]
@@ -113,17 +142,45 @@ Param (
     [switch]$QAMode = $false,
 
     [Parameter(Mandatory=$false)]
+    [switch]$DebugObjectDump = $false,
+
+    [Parameter(Mandatory=$false)]
     [switch]$Csv = $false,
 
     [Parameter(Mandatory=$false)]
     [switch]$ExportCapUncoveredUsers = $false,
 
+    [Parameter(Mandatory=$false)]
+    [switch]$ExportFindingsJson = $false,
+
     [Parameter(Mandatory = $false)]
-    [string]$BroCiToken
+    [string]$BroCiToken,
+
+    # ServicePrincipal credential params
+    [Parameter(Mandatory = $false)]
+    [string]$SPClientId,
+
+    [Parameter(Mandatory = $false)]
+    [string]$SPClientSecret,
+
+    [Parameter(Mandatory = $false)]
+    [string]$SPCertificatePath,
+
+    [Parameter(Mandatory = $false)]
+    [System.Security.SecureString]$SPCertificatePassword,
+
+    [Parameter(Mandatory = $false)]
+    [string]$SPCertificatePemPath,
+
+    [Parameter(Mandatory = $false)]
+    [string]$SPPrivateKeyPemPath,
+
+    [Parameter(Mandatory = $false)]
+    [System.Security.SecureString]$SPPrivateKeyPemPassword
 )
 
 #Constants
-$EntraFalconVersion = "V20260414"
+$EntraFalconVersion = "V20260616"
 
 # Import shared functions
 $ScriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
@@ -141,6 +198,7 @@ Import-Module (Join-Path $ScriptRoot 'modules\Send-GraphBatchRequest.psm1') -For
 Import-Module (Join-Path $ScriptRoot 'modules\Send-GraphRequest.psm1') -Force
 Import-Module (Join-Path $ScriptRoot 'modules\export_Summary.psm1') -Force
 Import-Module (Join-Path $ScriptRoot 'modules\check_PIM.psm1') -Force
+Import-Module (Join-Path $ScriptRoot 'modules\check_PIMGroups.psm1') -Force
 Import-Module (Join-Path $ScriptRoot 'modules\check_Tenant.psm1') -Force
 Import-Module (Join-Path $ScriptRoot 'modules\check_AgentIdentityBlueprints.psm1') -Force
 Import-Module (Join-Path $ScriptRoot 'modules\check_AgentIdentityBlueprintsPrincipals.psm1') -Force
@@ -153,6 +211,14 @@ if ($AuthFlow -ne "BroCiToken" -and -not [string]::IsNullOrWhiteSpace($BroCiToke
 
 if ($AuthFlow -eq "BroCiToken" -and [string]::IsNullOrWhiteSpace($BroCiToken)) {
     Write-Error "Invalid parameter combination: -AuthFlow BroCiToken requires -BroCiToken." -ErrorAction Stop
+}
+
+if ($AuthFlow -eq "ServicePrincipal" -and [string]::IsNullOrWhiteSpace($SPClientId)) {
+    Write-Error "Invalid parameter combination: -AuthFlow ServicePrincipal requires -SPClientId." -ErrorAction Stop
+}
+
+if ($AuthFlow -eq "ServicePrincipal" -and [string]::IsNullOrWhiteSpace($Tenant)) {
+    Write-Error "ServicePrincipal flow requires a tenant. Use -Tenant." -ErrorAction Stop
 }
 
 # Check non-Windows auth flow compatibility (Linux/macOS)
@@ -170,13 +236,25 @@ if (-not [string]::IsNullOrWhiteSpace($BroCiToken)) {
     # Access tokens (JWT) typically start with 'ey'
     if ($BroCiToken.StartsWith("ey")) {
         Write-Error "Invalid -BroCiToken: access token (JWT) detected. A refresh token is required." -ErrorAction Stop
-    }    
+    }
 
     # Must look like a refresh token (Azure refresh tokens usually start with "1.")
     if (-not $BroCiToken.StartsWith("1.")) {
         Write-Error "Invalid -BroCiToken: expected a refresh token starting with '1.'." -ErrorAction Stop
     }
     $GLOBALAuthMethods.BroCiToken = $BroCiToken
+}
+
+if ($AuthFlow -eq "ServicePrincipal") {
+    $GLOBALAuthMethods.SPClientId = $SPClientId
+    if (-not [string]::IsNullOrWhiteSpace($SPClientSecret))    { $GLOBALAuthMethods.SPClientSecret        = $SPClientSecret }
+    if (-not [string]::IsNullOrWhiteSpace($SPCertificatePath)) { $GLOBALAuthMethods.SPCertificatePath     = $SPCertificatePath }
+    if ($SPCertificatePassword)                                 { $GLOBALAuthMethods.SPCertificatePassword = $SPCertificatePassword }
+    if (-not [string]::IsNullOrWhiteSpace($SPCertificatePemPath)) {
+        $GLOBALAuthMethods.SPCertificatePemPath = $SPCertificatePemPath
+        $GLOBALAuthMethods.SPPrivateKeyPemPath  = $SPPrivateKeyPemPath
+    }
+    if ($SPPrivateKeyPemPassword) { $GLOBALAuthMethods.SPPrivateKeyPemPassword = $SPPrivateKeyPemPassword }
 }
 
 
@@ -233,6 +311,11 @@ write-host "********************************** PIM for Groups: Pre-Collection Ph
     $TenantPimForGroupsAssignments = Get-PimforGroupsAssignments
 } else {
     $global:GLOBALPimForGroupsChecked = $false
+    $global:GLOBALPimForGroupsHT = @{}
+    $global:GLOBALPimForGroupsResources = @()
+    $global:GLOBALPimForGroupsAssignmentObjects = @()
+    $global:GLOBALPimForGroupsPolicySettingsSupported = $false
+    $global:GLOBALPimForGroupsPolicySettingsSkipReason = "PIM for Groups assessment skipped by parameter."
 }
 
 
@@ -243,6 +326,8 @@ $CurrentTenant = Get-OrgInfo
 $StartTimestamp = Get-Date -Format "yyyyMMdd_HHmm"
 $GlobalAuditSummary.Tenant.Name = $CurrentTenant.DisplayName
 $GlobalAuditSummary.Tenant.Id = $CurrentTenant.Id
+$GlobalAuditSummary.Tenant.OnPremisesSyncEnabled = $CurrentTenant.OnPremisesSyncEnabled
+$GlobalAuditSummary.Tenant.OnPremisesLastSyncDateTime = $CurrentTenant.OnPremisesLastSyncDateTime
 
 $licenseResult = Get-EffectiveEntraLicense
 $GlobalAuditSummary.TenantLicense.Name  = $licenseResult.EntraIDLicencesString
@@ -252,7 +337,7 @@ $TenantDomains = Get-TenantDomains
 
 #Define output folder if not defined
 if ($null -eq $OutputFolder -or "" -eq $OutputFolder) {
-    $OutputFolder = "Results_$($CurrentTenant.DisplayName)_$($StartTimestamp)"
+    $OutputFolder = "Results_$($CurrentTenant.FileSafeDisplayName)_$($StartTimestamp)"
 }
 # Create report directory
 if (-not (Test-Path -Path $OutputFolder)) {
@@ -300,8 +385,8 @@ $global:GLOBALSecurityFindingsAccessContext = @{
 
 # Authentication for Security Findings
 $isBroCiFlow = @("BroCi", "BroCiManualCode", "BroCiToken") -contains $AuthFlow
-if ($isBroCiFlow) {
-    Write-Log -Level Verbose -Message "[SecurityFindings] BroCi flow detected. Reusing existing Graph token for special policy endpoints."
+if ($isBroCiFlow -or $AuthFlow -eq "ServicePrincipal") {
+    Write-Log -Level Verbose -Message "[SecurityFindings] BroCi/ServicePrincipal flow detected. Reusing existing Graph token for special policy endpoints."
 } elseif ($AuthFlow -eq "DeviceCode") {
     $global:GLOBALSecurityFindingsAccessContext.TokenSource = "Unavailable"
     $global:GLOBALSecurityFindingsAccessContext.IsAvailable = $false
@@ -346,6 +431,7 @@ $TenantReports = [pscustomobject]@{
     EntraRoles                = $true
     AzureRoles                = $false
     PimForEntra               = $false
+    PimForGroups              = $false
     SecurityFindings          = $true
     Summary                   = $true
 }
@@ -360,6 +446,7 @@ if (-not $GLOBALAzurePsChecks) {
 }
 $TenantReports.ConditionalAccessPolicies = ($null -ne $Caps -and $Caps.Count -gt 0)
 $TenantReports.PimForEntra               = ($null -ne $TenantPimRoleAssignments -and $TenantPimRoleAssignments.Count -gt 0)
+$TenantReports.PimForGroups              = ($GLOBALPimForGroupsChecked -and $GLOBALPimForGroupsPolicySettingsSupported -and $null -ne $GLOBALPimForGroupsResources -and @($GLOBALPimForGroupsResources).Count -gt 0)
 $TenantReports.AzureRoles                = ($null -ne $AzureIAMAssignments -and $AzureIAMAssignments.Count -gt 0)
 $TenantReports.Groups           = $ReportsBasedOnObjects.Groups
 $TenantReports.AppRegistrations = $ReportsBasedOnObjects.AppRegistrations
@@ -388,7 +475,7 @@ $AppRoleReferenceCache = @{}
 $EnterpriseApps = Invoke-CheckEnterpriseApps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -AllUsersBasicHT $AllUsersBasicHT -AgentObjectBasics $AgentObjectBasics -ApiTop $ApiTop -ServicePrincipalSignInActivityLookup $ServicePrincipalSignInActivityLookup -AppRoleReferenceCacheOut ([ref]$AppRoleReferenceCache) @optionalParamsET @optionalParamsOutput
 
 write-host "`n********************************** [3/15] Enumerating Managed Identities **********************************"
-$ManagedIdentities = Invoke-CheckManagedIdentities -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -AppRoleReferenceCache $AppRoleReferenceCache -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -ApiTop $ApiTop @optionalParamsOutput
+$ManagedIdentities = Invoke-CheckManagedIdentities -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AzureIAMAssignments $AzureIAMAssignments -AgentObjectBasics $AgentObjectBasics -AppRoleReferenceCache $AppRoleReferenceCache -TenantRoleAssignments $TenantRoleAssignments -AllGroupsDetails $AllGroupsDetails -OutputFolder $OutputFolder -ApiTop $ApiTop @optionalParamsOutput
 
 write-host "`n********************************** [4/15] Enumerating App Registrations **********************************"
 $AppRegistrations = Invoke-CheckAppRegistrations -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -EnterpriseApps $EnterpriseApps -AllGroupsDetails $AllGroupsDetails -AgentObjectBasics $AgentObjectBasics -TenantRoleAssignments $TenantRoleAssignments -OutputFolder $OutputFolder @optionalParamsOutput
@@ -420,7 +507,7 @@ Invoke-CheckRoles -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp 
 write-host "`n********************************** [12/15] Enumerating Conditional Access Policies **********************************"
 $AllCaps = Invoke-CheckCaps -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -AllGroupsDetails $AllGroupsDetails -Users $Users -OutputFolder $OutputFolder -TenantRoleAssignments $TenantRoleAssignments @optionalParamsOutput @optionalParamsCap
 
-write-host "`n********************************** [13/15] Enumerating PIM Role Settings **********************************"
+write-host "`n********************************** [13/16] Enumerating PIM Role Settings **********************************"
 if ($GLOBALPIMForEntraRolesChecked) {
     $PimforEntraRoles = Invoke-CheckPIM -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -AllGroupsDetails $AllGroupsDetails -Users $Users -TenantRoleAssignments $TenantRoleAssignments -AllCaps $AllCaps @optionalParamsOutput
 } else {
@@ -428,12 +515,76 @@ if ($GLOBALPIMForEntraRolesChecked) {
     $PimforEntraRoles = @{}
 }
 
-write-host "`n********************************** [14/15] Enumerating Security Findings **********************************"
-Invoke-CheckTenant -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -EnterpriseApps $EnterpriseApps -AppRegistrations $AppRegistrations -ManagedIdentities $ManagedIdentities -AllCaps $AllCaps -PimforEntraRoles $PimforEntraRoles -AllGroupsDetails $AllGroupsDetails -Users $Users -Devices $Devices -TenantRoleAssignments $TenantRoleAssignments
+write-host "`n********************************** [14/16] Enumerating PIM for Groups Settings **********************************"
+if ($TenantReports.PimForGroups) {
+    $PimforGroups = Invoke-CheckPIMGroups -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -AllGroupsDetails $AllGroupsDetails -AllCaps $AllCaps @optionalParamsOutput
+} else {
+    if (-not $GLOBALPimForGroupsChecked) {
+        if (-not [string]::IsNullOrWhiteSpace([string]$GLOBALPimForGroupsPolicySettingsSkipReason)) {
+            Write-Host "[!] $GLOBALPimForGroupsPolicySettingsSkipReason Skipping PIM for Groups settings report..."
+        } else {
+            Write-Host "[!] PIM for Groups was not assessed. Skipping PIM for Groups settings report..."
+        }
+    } elseif (-not $GLOBALPimForGroupsPolicySettingsSupported) {
+        Write-Host "[!] $GLOBALPimForGroupsPolicySettingsSkipReason Skipping PIM for Groups settings report..."
+    } elseif ($null -eq $GLOBALPimForGroupsResources -or @($GLOBALPimForGroupsResources).Count -eq 0) {
+        Write-Host "[!] No PIM-enabled groups found. Skipping PIM for Groups settings report..."
+    } else {
+        Write-Host "[!] PIM for Groups settings report is not available. Skipping..."
+    }
+    $PimforGroups = @{}
+}
 
-write-host "`n********************************** [15/15] Generating Summary Report **********************************"
+write-host "`n********************************** [15/16] Enumerating Security Findings **********************************"
+$SecurityFindings = Invoke-CheckTenant -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -EnterpriseApps $EnterpriseApps -AppRegistrations $AppRegistrations -ManagedIdentities $ManagedIdentities -AllCaps $AllCaps -PimforEntraRoles $PimforEntraRoles -AllGroupsDetails $AllGroupsDetails -Users $Users -Devices $Devices -TenantRoleAssignments $TenantRoleAssignments -TenantPimForGroupsAssignments $TenantPimForGroupsAssignments -AgentIdentityBlueprints $AgentIdentityBlueprints -AgentIdentities $AgentIdentities
+
+write-host "`n********************************** [16/16] Generating Summary Report **********************************"
 # Show assessment summary and generate summary HTML report
 Export-Summary -CurrentTenant $CurrentTenant -StartTimestamp $StartTimestamp -OutputFolder $OutputFolder -TenantDomains $TenantDomains -Users $Users
 
+if ($DebugObjectDump) {
+    $debugContext = @{
+        OutputFolder                           = $OutputFolder
+        StartTimestamp                        = $StartTimestamp
+        CurrentTenant                         = $CurrentTenant
+        EntraFalconVersion                    = $EntraFalconVersion
+        TenantDomains                         = $TenantDomains
+        GlobalAuditSummary                    = $GlobalAuditSummary
+        AllUsersBasicHT                       = $AllUsersBasicHT
+        UserReportState                       = $UserReportState
+        Users                                 = $Users
+        AllGroupsDetails                      = $AllGroupsDetails
+        AgentObjectBasics                     = $AgentObjectBasics
+        ServicePrincipalSignInActivityLookup = $ServicePrincipalSignInActivityLookup
+        AppRoleReferenceCache                 = $AppRoleReferenceCache
+        TenantPimForGroupsAssignments         = $TenantPimForGroupsAssignments
+        TenantPimRoleAssignments              = $TenantPimRoleAssignments
+        TenantRoleAssignments                 = $TenantRoleAssignments
+        AzureIAMAssignments                   = $AzureIAMAssignments
+        AllCaps                               = $AllCaps
+        Devices                               = $Devices
+        AdminUnitWithMembers                  = $AdminUnitWithMembers
+        PimforEntraRoles                      = $PimforEntraRoles
+        PimforGroups                          = $PimforGroups
+        EnterpriseApps                        = $EnterpriseApps
+        AppRegistrations                      = $AppRegistrations
+        ManagedIdentities                     = $ManagedIdentities
+        AgentIdentities                       = $AgentIdentities
+        AgentIdentityBlueprintsPrincipals     = $AgentIdentityBlueprintsPrincipals
+        AgentIdentityBlueprints               = $AgentIdentityBlueprints
+        SecurityFindings                      = $SecurityFindings
+    }
+
+    Export-EntraFalconDebugObjectDump @debugContext
+}
+
+if ($ExportFindingsJson) {
+    $findingsJsonPath = Export-EntraFalconSecurityFindingsJson -OutputFolder $OutputFolder -StartTimestamp $StartTimestamp -CurrentTenant $CurrentTenant -SecurityFindings $SecurityFindings
+    if (-not [string]::IsNullOrWhiteSpace($findingsJsonPath)) {
+        Write-Host "[+] Security findings JSON exported to $findingsJsonPath"
+    }
+}
+
 # Remove global variables
 Start-CleanUp
+write-host "[+] Run completed"

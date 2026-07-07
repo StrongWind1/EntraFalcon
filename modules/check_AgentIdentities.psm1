@@ -516,10 +516,14 @@ function Invoke-AgentIdentities {
         $AppApiPermissionUncategorized = if ($counts.ContainsKey('Uncategorized')) { $counts['Uncategorized'] } else { 0 }
 
         # For all sp check if there are Azure IAM assignments
+        $AllAzureRoleDetails = @()
         $AzureRoleDetails = @()
+        $EligibleAzureRoleDetails = @()
         if ($GLOBALAzurePsChecks) {
             #Use function to get the Azure Roles for each object
-            $AzureRoleDetails = Get-AzureRoleDetails -AzureIAMAssignments $AzureIAMAssignments -ObjectId $item.Id
+            $AllAzureRoleDetails = @(Get-AzureRoleDetails -AzureIAMAssignments $AzureIAMAssignments -ObjectId $item.Id)
+            $AzureRoleDetails = @($AllAzureRoleDetails | Where-Object { "$($_.AssignmentType)".Trim() -eq "Active" })
+            $EligibleAzureRoleDetails = @($AllAzureRoleDetails | Where-Object { "$($_.AssignmentType)".Trim() -eq "Eligible" })
             # Update the Roles property only if there are matching roles
             $AzureRoleCount = ($AzureRoleDetails | Measure-Object).Count
         } else {
@@ -560,8 +564,8 @@ function Invoke-AgentIdentities {
         # Enumerate all roles including scope the app is assigned to (note: Get-MgBetaServicePrincipalMemberOf do not return custom roles or scoped roles)
         $MatchingRoles = $TenantRoleAssignments[$item.Id]
 
-        $AppEntraRoles = @()
-        $AppEntraRoles = foreach ($Role in $MatchingRoles) {
+        $AllAppEntraRoles = @()
+        $AllAppEntraRoles = foreach ($Role in $MatchingRoles) {
             [PSCustomObject]@{
                 Type = "Roles"
                 DisplayName = $Role.DisplayName
@@ -569,10 +573,13 @@ function Invoke-AgentIdentities {
                 IsBuiltin = $Role.IsBuiltIn
                 RoleTier  = $role.RoleTier
                 IsPrivileged = $Role.IsPrivileged
+                AssignmentType = $Role.AssignmentType
                 Scoped = $Role.DirectoryScopeId
                 ScopeResolved = $Role.ScopeResolved
             }
         }
+        $AppEntraRoles = @($AllAppEntraRoles | Where-Object { "$($_.AssignmentType)".Trim() -eq "Active" })
+        $EligibleAppEntraRoles = @($AllAppEntraRoles | Where-Object { "$($_.AssignmentType)".Trim() -eq "Eligible" })
 
         $DirectAzureMaxTier = if ($GLOBALAzurePsChecks) { Get-HighestTierLabel -Assignments $AzureRoleDetails } else { "?" }
         $DirectEntraMaxTier = Get-HighestTierLabel -Assignments $AppEntraRoles
@@ -709,13 +716,13 @@ function Invoke-AgentIdentities {
             }
         }
 
-        # Group ownership tier inheritance: active + eligible paths.
+        # Group ownership tier inheritance: active-only paths.
         foreach ($group in $OwnedGroups) {
-            $entraMetrics = Get-GroupActiveRoleMetrics -Group $group -RoleSystem Entra -IncludeEligible
+            $entraMetrics = Get-GroupActiveRoleMetrics -Group $group -RoleSystem Entra
             $EntraMaxTierThroughGroupOwnership = Merge-HigherTierLabel -CurrentTier $EntraMaxTierThroughGroupOwnership -CandidateTier $entraMetrics.MaxTier
 
             if ($GLOBALAzurePsChecks) {
-                $azureMetrics = Get-GroupActiveRoleMetrics -Group $group -RoleSystem Azure -IncludeEligible
+                $azureMetrics = Get-GroupActiveRoleMetrics -Group $group -RoleSystem Azure
                 $AzureMaxTierThroughGroupOwnership = Merge-HigherTierLabel -CurrentTier $AzureMaxTierThroughGroupOwnership -CandidateTier $azureMetrics.MaxTier
             }
         }
@@ -989,20 +996,20 @@ function Invoke-AgentIdentities {
 
                 #Check each owned group
                 foreach ($OwnedGroup in $OwnedGroups) {
-                    # Ownership inherits the group's full impact (active + eligible role paths).
+                    # Ownership inherits only the group's active-path impact.
                     $groupInheritedImpact = 0
-                    if (-not [int]::TryParse([string]$OwnedGroup.Impact, [ref]$groupInheritedImpact)) {
+                    if (-not [int]::TryParse([string]$OwnedGroup.ImpactOrgActiveOnly, [ref]$groupInheritedImpact)) {
                         [void][int]::TryParse([string]$OwnedGroup.ImpactOrg, [ref]$groupInheritedImpact)
                     }
                     $ImpactScore += $groupInheritedImpact
 
-                    $entraMetrics = Get-GroupActiveRoleMetrics -Group $OwnedGroup -RoleSystem Entra -IncludeEligible
+                    $entraMetrics = Get-GroupActiveRoleMetrics -Group $OwnedGroup -RoleSystem Entra
                     $TotalAssignedRoleCount += $entraMetrics.RoleCount
                     $TotalAssignedPrivilegedRoles += $entraMetrics.PrivilegedCount
 
                     $groupAzureRoleCount = 0
                     if ($GLOBALAzurePsChecks) {
-                        $azureMetrics = Get-GroupActiveRoleMetrics -Group $OwnedGroup -RoleSystem Azure -IncludeEligible
+                        $azureMetrics = Get-GroupActiveRoleMetrics -Group $OwnedGroup -RoleSystem Azure
                         $groupAzureRoleCount = $azureMetrics.RoleCount
                         $TotalAzureRoles += $groupAzureRoleCount
                     }
@@ -1124,6 +1131,7 @@ function Invoke-AgentIdentities {
             GroupMember = $GroupMember
             AppOwnerOrganizationId = $appOwnerOrganizationId
             EntraRoleDetails = $AppEntraRoles
+            EligibleEntraRoleDetails = $EligibleAppEntraRoles
             GroupOwner = $OwnedGroups
             AppPermission = $AppAssignments
             Foreign = $ForeignTenant
@@ -1136,6 +1144,7 @@ function Invoke-AgentIdentities {
             CreationInDays = $CreationInDays
             AppsignInData = $AppsignInData
             AzureRoleDetails = $AzureRoleDetails
+            EligibleAzureRoleDetails = $EligibleAzureRoleDetails
             Owners = $OwnersCount
             Sponsors = $SponsorsCount
             AgentUsers = $AssignedAgentUsersCount
